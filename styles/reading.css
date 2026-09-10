@@ -39,6 +39,11 @@
 .tooltip b{display:block;font-weight:620;font-size:.98rem;margin-bottom:2px}
 .tooltip .tr{color:#EBE7DE}
 .tooltip .hint{color:#B9C2C0;font-size:.84rem;margin-top:5px}
+.tiphead{display:flex;align-items:flex-start;gap:10px}
+.tiphead b{flex:1}
+.tipsay{flex:none;background:rgba(255,255,255,.14);border:none;border-radius:5px;
+  color:#fff;font-size:.9rem;line-height:1;padding:5px 8px;margin:-2px -2px 0 0}
+.tipsay:hover{background:rgba(255,255,255,.26)}
 .tooltip:after{content:"";position:absolute;left:var(--arrow,50%);margin-left:-6px;
   border:6px solid transparent}
 .tooltip.below:after{top:-12px;border-bottom-color:var(--ink)}

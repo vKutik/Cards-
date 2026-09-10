@@ -8,6 +8,7 @@
   --paper:#EFEDE7; --card:#fff; --ink:#1A2028; --soft:#5C6670; --line:#CFD3CB;
   --green:#1D6560; --green-d:#134A46; --amber:#B4600F; --red:#93342A; --track:#CBC8BF;
   --wash-green:#EEF5F3; --wash-red:#FBEFEE; --wash-grey:#F6F5F1; --wash-mark:#E4EDE9;
+  --wash-amber:#FBF2E7;   /* what a missed answer is lifted with, never red */
 }
 
 *{box-sizing:border-box}

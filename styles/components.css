@@ -39,8 +39,48 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .opt{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);
   padding:12px 14px;margin-bottom:8px;color:var(--ink)}
 .opt:hover{border-color:var(--green)}
-.opt.right{border-color:var(--green);background:var(--wash-green)}
-.opt.wrong{border-color:var(--red);background:var(--wash-red)}
+.optlist{display:block}
+
+/* --- the three quiz mechanics --- */
+
+/* the sentence a word was cut out of */
+.qcard .cloze{margin:2px 0 16px}
+.qcard .cloze u{margin:0 3px}
+
+/* the target word inside any quiz sentence wears the reading highlight,
+   never the browser's default yellow <mark> */
+.qcard mark{background:var(--wash-mark);color:inherit;font-weight:620;
+  padding:1px 3px;border-radius:2px}
+
+/* gap fill, and the yes/no pair: options as pills, one tap each */
+.pillrow{display:flex;flex-wrap:wrap;gap:8px}
+.pill-opt{background:#fff;border:1px solid var(--line);border-radius:999px;
+  padding:10px 18px;color:var(--ink);font-weight:520;letter-spacing:-.01em}
+.pill-opt:hover{border-color:var(--green)}
+.pill-opt.yn{flex:1;min-width:9rem;text-align:center}
+
+/* context match: the whole sentence card is the answer */
+.qword{font-size:1.9rem;font-weight:640;letter-spacing:-.03em;line-height:1.1;margin:2px 0}
+.qask{margin:14px 0 10px}
+.sentences{display:grid;gap:10px}
+.sentence-opt{display:block;width:100%;text-align:left;background:var(--wash-grey);
+  border:1px solid var(--line);border-left:3px solid var(--line);border-radius:4px;
+  padding:13px 15px;font-size:1rem;line-height:1.6;color:var(--ink)}
+.sentence-opt:hover{border-color:var(--green)}
+
+/* intuitive focus: the line, then the meaning being claimed about it */
+.focus-line{font-size:1.05rem;line-height:1.7;margin-bottom:14px}
+.claim{background:var(--wash-grey);border-left:3px solid var(--line);
+  padding:11px 13px;font-size:1rem}
+
+/* one feedback language for every mechanic: a hit is confirmed quietly, a
+   miss is never red - it dims and the right answer is lifted in amber */
+.is-right {border-color:var(--green)!important;background:var(--wash-green)!important}
+.is-reveal{border-color:var(--amber)!important;background:var(--wash-amber)!important}
+.is-dim   {opacity:.4}
+.explain{margin-top:14px;padding-left:11px;border-left:3px solid var(--amber);
+  font-size:.93rem;color:var(--soft)}
+.explain b{color:var(--ink);font-weight:620}
 
 .grade{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .grade button{padding:13px 8px;border:1px solid var(--line);background:#fff;

@@ -1,60 +1,199 @@
-/* quiz.js - one question engine for every kind of question in the app.
+/* quiz.js - the checking stage.
  *
- * A question is always { question, options, correctIndex, wordId? }.
- * Where it came from - written into the lesson, or generated from the word
- * list - is not this module's business.
+ * Three mechanics instead of one list of radio buttons, all built from the
+ * word list at run time:
+ *
+ *   gap    a sentence with the word cut out; choose it back from pills
+ *   match  the word, and two sentences; choose the one that means it
+ *   focus  one sentence, one claimed meaning, yes or no
+ *
+ * The lesson's own comprehension questions come in as kind 'choice' and use
+ * the same runner, so every quiz in the app answers in one tap and gives the
+ * same feedback: a miss never flashes red, it lifts the right answer in
+ * amber and says what the word actually means.
  */
 import { sessionBar } from './progress.js';
 
-/* ---------- question builders ---------- */
+/* ---------- reading the {target} marker inside an example ---------- */
+const MARKER = /\{(.+?)\}/;
+const surfaceOf = ex => (ex.match(MARKER) || [, ''])[1];
+const blankOf   = ex => ex.replace(MARKER, '<u> </u>');
+const markedOf  = ex => ex.replace(MARKER, '<mark>$1</mark>');
 
-/** Shuffle, keeping track of where the right answer went. */
-function shuffled(q){
-  const tagged = q.options.map((text,i) => ({ text, ok: i === q.correctIndex }));
-  for(let i = tagged.length-1; i > 0; i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [tagged[i], tagged[j]] = [tagged[j], tagged[i]];
-  }
-  return tagged;
-}
-
-const pickSome = (arr, n) => {
-  const c = arr.slice();
+/* ---------- small helpers ---------- */
+const shuffle = a => {
+  const c = a.slice();
   for(let i = c.length-1; i > 0; i--){
     const j = Math.floor(Math.random()*(i+1)); [c[i],c[j]] = [c[j],c[i]];
   }
-  return c.slice(0, n);
+  return c;
 };
+const pick = (a, n) => shuffle(a).slice(0, n);
+const one  = a => a[Math.floor(Math.random()*a.length)];
 
-/** "What does <b>trembled</b> mean here?" - wrong answers are real
- *  definitions of other words, same part of speech where possible. */
-export function meaningQuestion(word, allWords, exclude = []){
-  const pool = allWords.filter(w => w.id !== word.id && !exclude.includes(w.id));
-  const same = pickSome(pool.filter(w => w.pos === word.pos), 3);
-  const wrong = same.length === 3 ? same : same.concat(pickSome(pool, 3 - same.length));
-  return {
-    wordId: word.id,
-    question: `In this passage, what does <b>${word.word}</b> mean?`,
-    options: [word.definition, ...wrong.map(w => w.definition)],
-    correctIndex: 0
-  };
+const matchCase = (text, model) => !text ? text
+  : /^[A-Z]/.test(model) ? text[0].toUpperCase() + text.slice(1)
+                         : text[0].toLowerCase() + text.slice(1);
+
+/* Which ending a form carries, so a row of options can never be solved by
+   spotting the only -ed among four dictionary forms. */
+function shapeOf(surface, base){
+  const s = String(surface).toLowerCase(), b = String(base).toLowerCase();
+  if(s === b) return 'base';
+  if(s.endsWith('ing')) return 'ing';
+  if(s.endsWith('ed') || s.endsWith('d')) return 'past';
+  if(s.endsWith('s')) return 's';
+  return 'base';
 }
 
-/** Gap-fill: the word's own example with the target blanked out. */
+/* Last-resort regular inflection, only for words whose own examples never
+   show the ending we need. Real forms from the examples always win, so the
+   irregular ones (shrank, spilt) come from there rather than from here.
+   The few this cannot build by rule are spelled out: English doubles the
+   last letter only when the final syllable is stressed, which no short
+   regex knows, and irregular pasts are irregular. */
+const ODD = {
+  scatter: { past:'scattered', ing:'scattering' },
+  shrink:  { past:'shrank',    ing:'shrinking'  },
+  swallow: { past:'swallowed', ing:'swallowing' },
+  borrow:  { past:'borrowed',  ing:'borrowing'  },
+  whistle: { past:'whistled',  ing:'whistling'  }
+};
+const doubles = w => /[^aeiou][aeiou][bdglmnprt]$/.test(w);
+function inflect(base, shape){
+  const odd = ODD[base] && ODD[base][shape];
+  if(odd) return odd;
+  if(shape === 'past'){
+    if(base.endsWith('e')) return base + 'd';
+    if(/[^aeiou]y$/.test(base)) return base.slice(0,-1) + 'ied';
+    return doubles(base) ? base + base.slice(-1) + 'ed' : base + 'ed';
+  }
+  if(shape === 'ing'){
+    if(base.endsWith('e') && !base.endsWith('ee')) return base.slice(0,-1) + 'ing';
+    return doubles(base) ? base + base.slice(-1) + 'ing' : base + 'ing';
+  }
+  if(shape === 's'){
+    if(/(s|sh|ch|x|o)$/.test(base)) return base + 'es';
+    if(/[^aeiou]y$/.test(base)) return base.slice(0,-1) + 'ies';
+    return base + 's';
+  }
+  return base;
+}
+
+/** A real form of `word` carrying the same ending as the answer, taken from
+ *  its own examples - null when it has none of that shape. */
+function realForm(word, shape){
+  const forms = word.examples.map(surfaceOf).filter(Boolean);
+  return forms.find(f => shapeOf(f, word.word) === shape) || null;
+}
+
+/** A form of `word` carrying the same ending as the answer, so the shape of
+ *  the options never points at the right one. */
+const surfaceLike = (word, shape) => realForm(word, shape) || inflect(word.word, shape);
+
+const sameClass = (word, allWords) =>
+  allWords.filter(w => w.pos === word.pos && w.id !== word.id);
+
+/* ---------- 1. Context gap fill ---------- */
+/** A sentence with the word cut out of it; the pills are all in the same
+ *  grammatical form so only the context tells you which one belongs. */
 export function gapQuestion(word, allWords){
-  const sentence = word.examples[0] || '';
-  const surface = (sentence.match(/\{(.+?)\}/) || [,word.word])[1];
-  const blanked = sentence.replace(/\{.+?\}/, '<u> </u>');
-  const wrong = pickSome(allWords.filter(w => w.id !== word.id && w.pos === word.pos), 3);
+  const example = one(word.examples);
+  const answer  = surfaceOf(example);
+  const shape   = shapeOf(answer, word.word);
+
+  // words that really are attested in this shape come first, so the pills
+  // are three genuine English forms rather than three built by rule
+  const pool = sameClass(word, allWords);
+  const attested = shuffle(pool.filter(w => realForm(w, shape)));
+  const rest     = shuffle(pool.filter(w => !realForm(w, shape)));
+  const others = [...attested, ...rest]
+    .map(w => matchCase(surfaceLike(w, shape), answer))
+    .filter(t => t.toLowerCase() !== answer.toLowerCase())
+    .slice(0, 3);
+
   return {
+    kind: 'gap',
     wordId: word.id,
-    question: `Which word fits the gap?<div class="cloze">${blanked}</div>`,
-    options: [surface, ...wrong.map(w => w.word)],
-    correctIndex: 0
+    prompt: blankOf(example),
+    options: [answer, ...others],
+    correctIndex: 0,
+    explain: `<b>${matchCase(answer, 'a')}</b> — ${word.definition}`
   };
 }
+
+/* ---------- 2. Context match ---------- */
+/** The word, then two sentences: its own, and one belonging to another word
+ *  of the same class with this word transplanted into it. The transplant
+ *  reads grammatically and means the wrong thing - which is the point. */
+export function matchQuestion(word, allWords){
+  const good = one(word.examples);
+
+  const donors = sameClass(word, allWords).filter(w => w.word !== word.opposite);
+  const donor  = one(donors.length ? donors : sameClass(word, allWords));
+  const donorExample = one(donor.examples);
+  const donorSurface = surfaceOf(donorExample);
+  const transplant = matchCase(
+    surfaceLike(word, shapeOf(donorSurface, donor.word)), donorSurface);
+  const wrong = donorExample.replace(MARKER, `<mark>${transplant}</mark>`);
+
+  return {
+    kind: 'match',
+    wordId: word.id,
+    word: word.word, ipa: word.ipa, pos: word.pos,
+    prompt: 'Which sentence uses it in that sense?',
+    options: [markedOf(good), wrong],
+    correctIndex: 0,
+    explain: `<b>${word.word}</b> — ${word.definition}`
+  };
+}
+
+/* ---------- 3. Intuitive focus ---------- */
+/** One sentence, one claimed meaning, three seconds. Half the time the claim
+ *  is the word's real meaning, half the time it belongs to another word. */
+export function focusQuestion(word, allWords){
+  const example  = one(word.examples);
+  const truthful = Math.random() < 0.5;
+  const other    = one(sameClass(word, allWords));
+  const claim    = truthful ? word.definition : other.definition;
+
+  return {
+    kind: 'focus',
+    wordId: word.id,
+    prompt: markedOf(example),
+    claim,
+    options: ['Yes, it fits', 'No, it does not'],
+    correctIndex: truthful ? 0 : 1,
+    explain: truthful
+      ? `<b>${word.word}</b> — ${word.definition}`
+      : `<b>${word.word}</b> really means: ${word.definition}`
+  };
+}
+
+/* ---------- choosing a mechanic ---------- */
+const MECHANICS = [gapQuestion, matchQuestion, focusQuestion];
+
+/** Rotate through the three, so a passage never asks the same way twice in
+ *  a row and the same passage is not identical on a second reading. */
+export const questionFor = (word, allWords, n) =>
+  MECHANICS[n % MECHANICS.length](word, allWords);
+
+export const anyQuestion = (word, allWords) => one(MECHANICS)(word, allWords);
 
 /* ---------- the runner ---------- */
+
+const BODY = {
+  gap:    q => `<div class="cloze">${q.prompt}</div>`,
+  match:  q => `<div class="qword">${q.word}</div>
+                <div class="pos">/${q.ipa}/ · ${q.pos}</div>
+                <p class="muted qask">${q.prompt}</p>`,
+  focus:  q => `<div class="story focus-line">${q.prompt}</div>
+                <div class="claim">${q.claim}</div>
+                <p class="muted qask">Does that meaning fit here?</p>`,
+  choice: q => `<p class="def">${q.prompt}</p>`
+};
+const ROW = { gap:'pillrow', match:'sentences', focus:'pillrow', choice:'optlist' };
+const OPT = { gap:'pill-opt', match:'sentence-opt', focus:'pill-opt yn', choice:'opt' };
 
 /**
  * @param {HTMLElement} container
@@ -62,28 +201,55 @@ export function gapQuestion(word, allWords){
  * @param {{onAnswer?:(q,ok)=>void, onDone:(score,total)=>void}} handlers
  */
 export function runQuiz(container, questions, handlers){
-  let i = 0, score = 0, options = null;
+  let i = 0, score = 0;
 
   function draw(){
     if(i >= questions.length) return handlers.onDone(score, questions.length);
 
-    const q = questions[i];
-    if(!options) options = shuffled(q);
+    // lesson comprehension questions arrive without a kind and use `question`
+    const raw  = questions[i];
+    const q    = { ...raw, kind: raw.kind || 'choice', prompt: raw.prompt ?? raw.question };
+    const tagged = q.options.map((text, k) => ({ text, ok: k === q.correctIndex }));
+    // Yes/No keeps its order; everything else is shuffled
+    const opts = q.kind === 'focus' ? tagged : shuffle(tagged);
 
     container.innerHTML = sessionBar(i, questions.length) + `
       <div class="top"><span class="pill">Question ${i+1} of ${questions.length}</span></div>
-      <div class="card">
-        <p class="def">${q.question}</p>
-        ${options.map((o,k) => `<button class="opt" data-k="${k}">${o.text}</button>`).join('')}
+      <div class="card qcard">
+        ${BODY[q.kind](q)}
+        <div class="${ROW[q.kind]}">
+          ${opts.map((o, k) =>
+            `<button class="${OPT[q.kind]}" data-k="${k}">${o.text}</button>`).join('')}
+        </div>
+        <div class="explain" hidden></div>
       </div>`;
 
-    container.querySelectorAll('.opt').forEach(btn => btn.onclick = () => {
-      const chosen = options[+btn.dataset.k];
-      btn.className = 'opt ' + (chosen.ok ? 'right' : 'wrong');
-      if(chosen.ok) score++;
+    const buttons = [...container.querySelectorAll('[data-k]')];
+
+    buttons.forEach(btn => btn.onclick = () => {
+      const chosen = opts[+btn.dataset.k];
+      buttons.forEach(b => b.onclick = null);
+
+      if(chosen.ok){
+        btn.classList.add('is-right');
+        score++;
+      } else {
+        // no red anywhere: the miss just steps back, the answer steps forward
+        btn.classList.add('is-dim');
+        buttons[opts.findIndex(o => o.ok)].classList.add('is-reveal');
+        buttons.forEach(b => { if(!b.className.match(/is-(right|reveal|dim)/)) b.classList.add('is-dim'); });
+      }
+
+      const note = container.querySelector('.explain');
+      note.innerHTML = q.explain || '';
+      note.hidden = !q.explain;
+
       handlers.onAnswer && handlers.onAnswer(q, chosen.ok);
-      container.querySelectorAll('.opt').forEach(b => b.onclick = null);
-      setTimeout(() => { i++; options = null; draw(); }, 600);
+
+      // auto-advance, or sooner if they tap anywhere once they have read it
+      const next = () => { container.onclick = null; clearTimeout(timer); i++; draw(); };
+      const timer = setTimeout(next, chosen.ok ? 1100 : 2800);
+      setTimeout(() => { container.onclick = next; }, 350);
     });
   }
 

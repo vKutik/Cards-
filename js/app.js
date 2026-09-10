@@ -8,10 +8,11 @@ import * as store from './storage.js';
 import * as srs from './srs.js';
 import * as settings from './settings.js';
 import { progressRing, stageStrip, sessionBar } from './components/progress.js';
-import { renderFlashcard, speak, withMarks } from './components/flashcard.js';
+import { renderFlashcard, withMarks } from './components/flashcard.js';
+import { speak } from './components/audio.js';
 import { renderReview } from './components/review.js';
 import { initReader, dictOf } from './components/reader.js';
-import { runQuiz, meaningQuestion, gapQuestion } from './components/quiz.js';
+import { runQuiz, questionFor, anyQuestion } from './components/quiz.js';
 import { hideTooltip } from './components/tooltip.js';
 
 const screen = () => document.getElementById('screen');
@@ -131,10 +132,11 @@ function lessonReading(lesson, ws){
 }
 
 function lessonQuiz(lesson, ws){
-  // written comprehension questions, plus one gap-fill built from the words
+  // the story's own comprehension questions, then one of the three word
+  // mechanics on a word from today - which one is left to the draw
   const questions = [
     ...lesson.quiz,
-    gapQuestion(ws[Math.floor(Math.random()*ws.length)], words)
+    anyQuestion(ws[Math.floor(Math.random()*ws.length)], words)
   ];
   screen().innerHTML = `<h1>${lesson.title}</h1>` + stageStrip(2) + '<div id="stage"></div>';
 
@@ -218,7 +220,11 @@ function pickPassage(open){
 
 routes.readingQuiz = ({ id }) => {
   const passage = passages[id];
-  const questions = passage.wordIds.map(wid => meaningQuestion(wordById(wid), words, passage.wordIds));
+  // one question per target word, rotating gap / match / focus so a passage
+  // never asks the same way twice running, nor the same way twice over
+  const from = Math.floor(Math.random()*3);
+  const questions = passage.wordIds.map((wid, n) =>
+    questionFor(wordById(wid), words, from + n));
   screen().innerHTML = '<div id="stage"></div>';
 
   runQuiz(screen().querySelector('#stage'), questions, {

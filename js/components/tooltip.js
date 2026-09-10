@@ -1,5 +1,6 @@
 /* tooltip.js - one tooltip at a time, positioned over #tooltip-layer.
  * Kept apart from reader.js so any screen can use it. */
+import { speak } from './audio.js';
 
 const layer = () => document.getElementById('tooltip-layer');
 let open = null;   // { el, anchor }
@@ -13,7 +14,8 @@ export function hideTooltip(){
 
 /**
  * @param {HTMLElement} anchor element the bubble points at
- * @param {{title:string, translation?:string, hint?:string}} content
+ * @param {{title:string, say?:string, translation?:string, hint?:string}} content
+ *        `say` is the text the speaker button reads out, if it should have one
  */
 export function showTooltip(anchor, content){
   const wasSame = open && open.anchor === anchor;
@@ -23,10 +25,18 @@ export function showTooltip(anchor, content){
   const el = document.createElement('div');
   el.className = 'tooltip';
   el.innerHTML =
-    `<b>${content.title}</b>` +
+    `<div class="tiphead"><b>${content.title}</b>` +
+    (content.say ? `<button class="tipsay" aria-label="Listen">🔊</button>` : '') +
+    `</div>` +
     (content.translation ? `<div class="tr">${content.translation}</div>` : '') +
     (content.hint ? `<div class="hint">${content.hint}</div>` : '');
   layer().appendChild(el);
+
+  if(content.say){
+    const say = el.querySelector('.tipsay');
+    // stop the tap here: the document-level listener would close the bubble
+    say.onclick = e => { e.stopPropagation(); speak(content.say); };
+  }
 
   const a = anchor.getBoundingClientRect();
   const t = el.getBoundingClientRect();

@@ -1,7 +1,8 @@
 /* review.js - the spaced-repetition screen. Recall first, reveal second,
  * then say how hard it was; srs.js turns that into the next due date. */
 import { sessionBar } from './progress.js';
-import { speak, exampleOf, exampleNo, nextExample, withMarks } from './flashcard.js';
+import { exampleOf, exampleNo, nextExample, withMarks } from './flashcard.js';
+import { speak } from './audio.js';
 import * as srs from '../srs.js';
 import * as store from '../storage.js';
 

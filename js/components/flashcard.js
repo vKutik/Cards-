@@ -3,15 +3,8 @@
  * answer proves nothing, the real check is the review tomorrow.
  */
 import { sessionBar } from './progress.js';
+import { speak } from './audio.js';
 import * as store from '../storage.js';
-
-export const speak = text => {
-  try {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US'; u.rate = .85;
-    speechSynthesis.cancel(); speechSynthesis.speak(u);
-  } catch(e){}
-};
 
 /** The example currently chosen for a word, and how to step through them. */
 export const exampleOf = word => word.examples[store.getExample(word.id) % word.examples.length];

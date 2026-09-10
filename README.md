@@ -40,7 +40,8 @@ js/
     flashcard.js           stage 1 card
     reader.js              stage 2: paints a passage, hangs tooltips
     tooltip.js             one tooltip at a time, positioned and flipped
-    quiz.js                stage 3: question engine and question builders
+    quiz.js                stage 3: the three mechanics and the runner
+    audio.js               the one place that talks to SpeechSynthesis
     review.js              the spaced-repetition screen
 ```
 
@@ -61,10 +62,33 @@ js/
 2. **Stage 1, flashcards** — word, transcription, audio, definition, one
    example. Five cards.
 3. **Stage 2, reading** — a short text weaving in all five words. Tap any
-   highlighted word for a tooltip with its transcription and meaning; the
-   text stays where it is.
+   highlighted word for a tooltip with its transcription, a speaker button
+   and its meaning; the text stays where it is.
 4. **Stage 3, quiz** — two comprehension questions written for the story,
-   plus one gap-fill generated from the day's words.
+   plus one of the three checking mechanics below on a word from today.
+
+### The three checking mechanics
+
+No radio buttons and no submit button anywhere: the answer *is* the tap, on
+the pill or on the sentence card itself. All three are generated from the
+word list at run time, so they never go stale.
+
+| Mechanic | What you see | What it checks |
+|---|---|---|
+| **Context gap fill** | a sentence with the word cut out, and 3–4 word pills | whether the context, not the translation, tells you which word belongs |
+| **Context match** | the word, then two sentences — its own and one belonging to another word with this one transplanted in | the sense of the word, not just recognition of its shape |
+| **Intuitive focus** | one sentence with the word highlighted and one claimed meaning — yes or no | a three-second calibration, no reading of four options |
+
+Every option in a gap fill carries the same ending as the answer, so the
+shape of the words can never point at the right one. Real forms from the
+word list are used wherever they exist; the handful English does not build
+by rule are spelled out in `ODD` in `quiz.js`.
+
+**Feedback is never punitive.** A miss does not flash red: the tapped
+option fades, the right answer lifts in amber, and a line underneath says
+what the word actually means. It moves on by itself, or sooner if you tap.
+The story's own comprehension questions run through the same runner and get
+the same treatment.
 
 Extra reading practice draws a random passage from the 97 in the bank; a
 passage opens only once every word in it has been introduced.
