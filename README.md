@@ -93,7 +93,7 @@ already renders it when present.
 ## Settings and developer mode
 
 The Settings screen (linked from the home screen) currently just shows
-where progress is saved and links to backup. A "Developer" card with a
+where progress is saved. A "Developer" card with a
 **Delete all progress** button is hidden until you tap the "Vocabulary
 trainer" label on that screen five times in a row — the same trick as
 Android's build-number unlock, so it isn't something a learner hits by

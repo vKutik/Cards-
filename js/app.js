@@ -58,7 +58,6 @@ routes.home = () => {
     </button>
     <button class="go ghost" id="reading" ${reading.length ? '' : 'disabled'}>Reading practice</button>
     <button class="go ghost" id="list">Word list</button>
-    <button class="linkbtn" id="backup">Back up progress</button>
     <button class="linkbtn" id="settings">Settings</button>`;
 
   const on = (id, fn) => { const el = screen().querySelector('#'+id); if(el) el.onclick = fn; };
@@ -66,7 +65,6 @@ routes.home = () => {
   on('lesson',   () => lesson && go('lesson', { id: lesson.id, stage: resumeStage(lesson) }));
   on('reading',  () => go('reading'));
   on('list',     () => go('list'));
-  on('backup',   () => go('backup'));
   on('settings', () => go('settings'));
 };
 
@@ -267,38 +265,6 @@ routes.list = () => {
   wireBack();
 };
 
-/* ---------------- backup ---------------- */
-routes.backup = ({ note = '' } = {}) => {
-  screen().innerHTML = `<h1>Back up progress</h1>
-    <p class="muted">Saving to: ${store.storageLabel()}</p>
-    ${note ? `<div class="fb ${note.startsWith('Restored') ? 'ok' : 'no'}">${note}</div>` : ''}
-    <div class="card">
-      <h2>Copy your progress out</h2>
-      <textarea id="out" rows="4" readonly style="width:100%;font:inherit;font-size:.8rem">${store.exportJSON()}</textarea>
-      <button class="go ghost" id="copy" style="margin-top:10px">Copy</button>
-    </div>
-    <div class="card">
-      <h2>Paste it back in</h2>
-      <textarea id="in" rows="4" placeholder="paste here" style="width:100%;font:inherit;font-size:.8rem"></textarea>
-      <button class="go ghost" id="restore" style="margin-top:10px">Restore</button>
-    </div>
-    ${backButton('Back','home')}`;
-
-  screen().querySelector('#copy').onclick = () => {
-    const t = screen().querySelector('#out'); t.select();
-    try { document.execCommand('copy'); } catch(e){}
-  };
-  screen().querySelector('#restore').onclick = async () => {
-    try {
-      await store.importJSON(screen().querySelector('#in').value.trim());
-      go('backup', { note:'Restored.' });
-    } catch(e){
-      go('backup', { note:'Could not read that text. Check that you pasted all of it.' });
-    }
-  };
-  wireBack();
-};
-
 /* ---------------- settings ---------------- */
 /* Nothing here is essential to the learning flow. The "Developer" card is
  * hidden until settings.registerUnlockTap() says five taps landed on the
@@ -310,11 +276,9 @@ routes.settings = ({ confirming = false, note = '' } = {}) => {
       <h2 id="tap" style="cursor:default">Vocabulary trainer</h2>
       <p class="muted">Saving to: ${store.storageLabel()}</p>
     </div>
-    <button class="go ghost" id="toBackup">Back up progress</button>
     ${settings.isDevMode() ? devCard(confirming, note) : ''}
     ${backButton('Back','home')}`;
 
-  screen().querySelector('#toBackup').onclick = () => go('backup');
   screen().querySelector('#tap').onclick = () => {
     if(settings.registerUnlockTap()) go('settings', { note:'Developer mode unlocked.' });
   };

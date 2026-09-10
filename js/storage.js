@@ -90,16 +90,6 @@ export function logAnswer(right){
 }
 export const todayLog = () => state.log[new Date().toISOString().slice(0,10)] || { right:0, wrong:0 };
 
-/* ---------- backup ---------- */
-export const exportJSON = () => JSON.stringify(state);
-export async function importJSON(text){
-  const parsed = JSON.parse(text);
-  if(!parsed || typeof parsed !== 'object' || !parsed.words) throw new Error('not a progress file');
-  state = { ...empty(), ...parsed };
-  await save();
-  return state;
-}
-
 /** Wipe every word, lesson and log - a hard reset back to a fresh install.
  *  Developer-only tool (see js/settings.js); not reachable from normal UI. */
 export async function resetAll(){
