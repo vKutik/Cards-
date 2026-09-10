@@ -12,6 +12,9 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .go[disabled]:hover{background:var(--green)}
 .go.ghost[disabled]:hover{background:#fff}
 
+.go.danger{background:var(--red);margin-top:4px}
+.go.danger:hover{background:#7A2A22}
+
 .linkbtn{display:block;width:100%;background:none;border:none;color:var(--soft);
   font-size:.85rem;padding:10px;margin-top:2px}
 .linkbtn:hover{color:var(--green-d)}

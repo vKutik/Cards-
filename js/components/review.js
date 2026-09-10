@@ -48,7 +48,7 @@ export function renderReview(container, word, pos, handlers){
       <div class="word">${word.word}</div>
       <div class="pos">/${word.ipa}/ · ${word.pos}</div>
       <button class="say" data-say="${word.word}">🔊 listen</button>
-      <div class="uk">${word.translation}</div>
+      <!-- translation hidden in the UI for now, see flashcard.js -->
       <div class="def">${word.definition}</div>
       <div class="ex">${withMarks(exampleOf(word))}</div>
       ${word.opposite !== '—' ? `<div class="anto">opposite: ${word.opposite}</div>` : ''}

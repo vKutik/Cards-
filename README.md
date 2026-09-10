@@ -30,6 +30,7 @@ js/
   data.js                  the data contract (re-exports + helpers)
   storage.js               the only module that persists progress
   srs.js                   scheduling rules, no DOM
+  settings.js               app preferences and the developer-mode unlock
   data/
     words.js               100 words: ipa, translation, definition, examples
     lessons.js             20 lessons: 5 wordIds, a marked-up text, a quiz
@@ -57,11 +58,11 @@ js/
 ## Learning flow
 
 1. **Daily limit** — 5 new words per rolling 24 hours.
-2. **Stage 1, flashcards** — word, transcription, audio, translation,
-   definition, one example. Five cards.
+2. **Stage 1, flashcards** — word, transcription, audio, definition, one
+   example. Five cards.
 3. **Stage 2, reading** — a short text weaving in all five words. Tap any
-   highlighted word for a tooltip with its transcription, translation and
-   meaning; the text stays where it is.
+   highlighted word for a tooltip with its transcription and meaning; the
+   text stays where it is.
 4. **Stage 3, quiz** — two comprehension questions written for the story,
    plus one gap-fill generated from the day's words.
 
@@ -79,6 +80,27 @@ passage opens only once every word in it has been introduced.
 
 Reading only recolours a word. It never moves the due date; that is the
 review screen's job alone.
+
+### Ukrainian translations
+
+Every word in `js/data/words.js` carries a `translation` field, but it is
+not rendered anywhere right now — hidden in the UI on request, the data
+stays put. To bring it back, drop the `.uk` markup back into
+`flashcard.js`, `review.js`, the word-list row in `app.js`, and pass
+`translation` into the `showTooltip()` call in `reader.js`; `tooltip.js`
+already renders it when present.
+
+## Settings and developer mode
+
+The Settings screen (linked from the home screen) currently just shows
+where progress is saved and links to backup. A "Developer" card with a
+**Delete all progress** button is hidden until you tap the "Vocabulary
+trainer" label on that screen five times in a row — the same trick as
+Android's build-number unlock, so it isn't something a learner hits by
+accident. The unlock persists (`localStorage`, key `vocab-settings`)
+across reloads. Deletion asks for a second confirmation and cannot be
+undone; it goes through `storage.resetAll()`, the only function allowed to
+wipe the progress store.
 
 ## Moving to a Python backend
 

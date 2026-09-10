@@ -13,7 +13,7 @@ export function hideTooltip(){
 
 /**
  * @param {HTMLElement} anchor element the bubble points at
- * @param {{title:string, translation:string, hint?:string}} content
+ * @param {{title:string, translation?:string, hint?:string}} content
  */
 export function showTooltip(anchor, content){
   const wasSame = open && open.anchor === anchor;
@@ -23,7 +23,8 @@ export function showTooltip(anchor, content){
   const el = document.createElement('div');
   el.className = 'tooltip';
   el.innerHTML =
-    `<b>${content.title}</b><div class="tr">${content.translation}</div>` +
+    `<b>${content.title}</b>` +
+    (content.translation ? `<div class="tr">${content.translation}</div>` : '') +
     (content.hint ? `<div class="hint">${content.hint}</div>` : '');
   layer().appendChild(el);
 

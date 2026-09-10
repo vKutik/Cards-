@@ -6,6 +6,7 @@ import { words, lessons, passages, wordById, lessonWords, openPassages, DAILY_NE
   from './data.js';
 import * as store from './storage.js';
 import * as srs from './srs.js';
+import * as settings from './settings.js';
 import { progressRing, stageStrip, sessionBar } from './components/progress.js';
 import { renderFlashcard, speak, withMarks } from './components/flashcard.js';
 import { renderReview } from './components/review.js';
@@ -57,14 +58,16 @@ routes.home = () => {
     </button>
     <button class="go ghost" id="reading" ${reading.length ? '' : 'disabled'}>Reading practice</button>
     <button class="go ghost" id="list">Word list</button>
-    <button class="linkbtn" id="backup">Back up progress</button>`;
+    <button class="linkbtn" id="backup">Back up progress</button>
+    <button class="linkbtn" id="settings">Settings</button>`;
 
   const on = (id, fn) => { const el = screen().querySelector('#'+id); if(el) el.onclick = fn; };
-  on('review',  () => go('review',  { queue: shuffle(dueIds), i:0, revealed:false, right:0 }));
-  on('lesson',  () => lesson && go('lesson', { id: lesson.id, stage: resumeStage(lesson) }));
-  on('reading', () => go('reading'));
-  on('list',    () => go('list'));
-  on('backup',  () => go('backup'));
+  on('review',   () => go('review',  { queue: shuffle(dueIds), i:0, revealed:false, right:0 }));
+  on('lesson',   () => lesson && go('lesson', { id: lesson.id, stage: resumeStage(lesson) }));
+  on('reading',  () => go('reading'));
+  on('list',     () => go('list'));
+  on('backup',   () => go('backup'));
+  on('settings', () => go('settings'));
 };
 
 /** What to offer next. A lesson whose cards are done but whose reading or
@@ -253,7 +256,6 @@ routes.list = () => {
         <span class="ipos">/${w.ipa}/ · ${w.pos}</span>
         <button class="say tiny" data-say="${w.word}">🔊</button>
       </div>
-      <div class="uk">${w.translation}</div>
       <div class="idef">${w.definition}</div>
       <div class="ex">${withMarks(w.examples[0])}</div>
       ${w.opposite !== '—' ? `<div class="anto">opposite: ${w.opposite}</div>` : ''}
@@ -296,6 +298,51 @@ routes.backup = ({ note = '' } = {}) => {
   };
   wireBack();
 };
+
+/* ---------------- settings ---------------- */
+/* Nothing here is essential to the learning flow. The "Developer" card is
+ * hidden until settings.registerUnlockTap() says five taps landed on the
+ * title within its window - not something a learner stumbles into, but not
+ * a secret either: the title says so. */
+routes.settings = ({ confirming = false, note = '' } = {}) => {
+  screen().innerHTML = `<h1>Settings</h1>
+    <div class="card">
+      <h2 id="tap" style="cursor:default">Vocabulary trainer</h2>
+      <p class="muted">Saving to: ${store.storageLabel()}</p>
+    </div>
+    <button class="go ghost" id="toBackup">Back up progress</button>
+    ${settings.isDevMode() ? devCard(confirming, note) : ''}
+    ${backButton('Back','home')}`;
+
+  screen().querySelector('#toBackup').onclick = () => go('backup');
+  screen().querySelector('#tap').onclick = () => {
+    if(settings.registerUnlockTap()) go('settings', { note:'Developer mode unlocked.' });
+  };
+
+  const del = screen().querySelector('#devDelete');
+  if(del) del.onclick = () => go('settings', { confirming:true });
+  const yes = screen().querySelector('#devYes');
+  if(yes) yes.onclick = async () => { await store.resetAll(); go('home'); };
+  const no = screen().querySelector('#devNo');
+  if(no) no.onclick = () => go('settings');
+
+  wireBack();
+};
+
+function devCard(confirming, note){
+  return `
+    <div class="card">
+      <h2>Developer</h2>
+      ${note ? `<div class="fb ok">${note}</div>` : ''}
+      <p class="muted">Not part of the normal flow. Deletes every word, lesson and log
+        on this device - there is no undo.</p>
+      ${confirming
+        ? `<div class="fb no">Delete all progress? This cannot be undone.</div>
+           <button class="go danger" id="devYes">Yes, delete everything</button>
+           <button class="go ghost" id="devNo">Cancel</button>`
+        : `<button class="go danger" id="devDelete">Delete all progress</button>`}
+    </div>`;
+}
 
 /* ---------------- helpers ---------------- */
 function shuffle(a){

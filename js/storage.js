@@ -99,3 +99,11 @@ export async function importJSON(text){
   await save();
   return state;
 }
+
+/** Wipe every word, lesson and log - a hard reset back to a fresh install.
+ *  Developer-only tool (see js/settings.js); not reachable from normal UI. */
+export async function resetAll(){
+  state = empty();
+  await save();
+  return state;
+}

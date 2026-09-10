@@ -28,9 +28,9 @@ export function initReader(container, passage, dict, onLook){
       e.stopPropagation();
       const word = dict.get(el.dataset.word);
       if(!word) return;
+      // translation is on the word object but left out of the tooltip for now
       showTooltip(el, {
         title: `${word.word} /${word.ipa}/`,
-        translation: word.translation,
         hint: word.definition
       });
       if(!looked.has(word.id)){ looked.add(word.id); onLook && onLook(word); }
