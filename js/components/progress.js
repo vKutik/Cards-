@@ -27,9 +27,9 @@ export function progressRing(c){
     </svg>
   </div>
   <div class="key">
-    <span>🟢 Learned <b>${c.known}</b></span>
-    <span>🟠 Seen <b>${c.read}</b></span>
-    <span>🔴 Started <b>${c.started}</b></span>
+    <span><i class="dot known"></i>Learned <b>${c.known}</b></span>
+    <span><i class="dot read"></i>Seen <b>${c.read}</b></span>
+    <span><i class="dot started"></i>Started <b>${c.started}</b></span>
   </div>`;
 }
 
