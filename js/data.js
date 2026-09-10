@@ -23,9 +23,25 @@ export const lessonWords = lesson => lesson.wordIds.map(wordById);
 /** The lesson a word belongs to, or undefined. */
 export const lessonOfWord = id => lessons.find(l => l.wordIds.includes(id));
 
-/** Passages whose every target word is already in `knownIds`. */
+/** How many passages every word carries, and how many make up one round. */
+export const SHELF_SIZE = 10;
+export const ROUND_SIZE = 5;
+
+/* Every word owns a shelf of SHELF_SIZE passages, ordered by `slot`. A
+   passage belongs to exactly one word, so "ten texts for this word" is
+   literally true and the rounds have something to count through. */
+const SHELVES = passages.reduce((acc, p) => {
+  (acc[p.w] = acc[p.w] || [])[p.slot] = p;
+  return acc;
+}, {});
+
+/** The ten passages belonging to one word, in shelf order. */
+export const shelfOf = wordId => SHELVES[wordId] || [];
+
+/** Passages the learner can read: a passage opens with its own word alone.
+ *  Other course words it happens to contain are marked, not required. */
 export const openPassages = knownIds =>
-  passages.filter(p => p.wordIds.every(id => knownIds.has(id)));
+  passages.filter(p => knownIds.has(p.w));
 
 /* The async shape a REST backend would use. Screens already call these,
    so swapping the body for fetch() is the whole migration. */

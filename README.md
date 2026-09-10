@@ -34,7 +34,7 @@ js/
   data/
     words.js               100 words: ipa, translation, definition, examples
     lessons.js             20 lessons: 5 wordIds, a marked-up text, a quiz
-    passages.js            97 extra passages, 36 from public-domain books
+    passages.js            1000 reading passages, ten for every word
   components/
     progress.js            the round gauge and its legend
     flashcard.js           stage 1 card
@@ -90,8 +90,50 @@ what the word actually means. It moves on by itself, or sooner if you tap.
 The story's own comprehension questions run through the same runner and get
 the same treatment.
 
-Extra reading practice draws a random passage from the 97 in the bank; a
-passage opens only once every word in it has been introduced.
+## Reading practice
+
+Every word owns a shelf of **ten passages**, and a passage belongs to exactly
+one word, so "ten texts for this word" is literally true. A passage opens as
+soon as its own word has been introduced — other course words it happens to
+contain are highlighted for the tooltip but do not gate it.
+
+The shelves are worked through **five at a time**: five texts for the first
+word, five for the next, and once every word has had its five, round two
+opens with texts six to ten. A word introduced later simply joins the round
+it is behind on. The header says where you are — `Round 1 · shallow, text 3
+of 5`. After the last text of the last round, it keeps going by revisiting
+what you have already read, so there is always more practice available.
+
+Each text is followed by one check on its word, and the mechanic follows the
+text's place on the shelf — so five texts give gap, match, focus, gap, match
+rather than the same question five times.
+
+### Where the texts come from
+
+932 of the 1000 are real extracts from 101 public-domain books — Dickens,
+Austen, the Brontës, Twain, London, Chopin, Cather, Wharton, Conan Doyle,
+Montgomery, Burnett and others — each shown with its source. The remaining 68
+were written for this course, for words the nineteenth century barely uses
+(`tape`, `leak`, `drill`, `rely`).
+
+They were mined from the corpus and filtered, not hand-picked one by one, so
+the pipeline does the quality work:
+
+- **Wrong senses are blocked.** A regex has no idea that "attaching
+  significance" is not the `attach` this course teaches, so 53 words carry an explicit list
+  of collocations to reject, plus a rule that a physical word sitting beside a
+  strongly abstract noun is the other sense. Some off-sense uses still get
+  through — roughly one text in ten — which is the honest limit of matching
+  senses without a language model.
+- **Offensive material is dropped.** Period fiction carries slurs; anything
+  matching that list, or reading as a broken fragment, is thrown out.
+- **Readable books are preferred.** Each book is scored for sentence length
+  and vocabulary outside the corpus's common 2,400 words, and passages from
+  the denser books are penalised, so what surfaces leans towards Anne of Green
+  Gables rather than Middlemarch.
+- Passages must start a paragraph, end a sentence, run 35–80 words, name at
+  most three people, and no more than two may come from the same book for the
+  same word.
 
 ### The four steps a word moves through
 

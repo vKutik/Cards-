@@ -1,6 +1,6 @@
 /* reader.js - the reading screen.
  *
- * It is handed a passage ({ text, wordIds, source }) and does two things:
+ * It is handed a passage ({ text, source }) and does two things:
  * paints it, and hangs a tooltip on every <mark data-word="..."> the data
  * already carries. It never looks a word up itself - the caller passes a
  * dictionary, so the same module serves lessons and extra reading alike.

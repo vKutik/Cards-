@@ -2,8 +2,8 @@
  * components together. Screens decide what to show; they never persist
  * anything themselves (storage.js) and never schedule anything (srs.js).
  */
-import { words, lessons, passages, wordById, lessonWords, openPassages, DAILY_NEW_LIMIT }
-  from './data.js';
+import { words, lessons, passages, wordById, lessonWords, openPassages,
+         shelfOf, ROUND_SIZE, DAILY_NEW_LIMIT } from './data.js';
 import * as store from './storage.js';
 import * as srs from './srs.js';
 import * as settings from './settings.js';
@@ -188,17 +188,20 @@ routes.review = params => {
 
 /* ---------------- extra reading ---------------- */
 routes.reading = ({ id = null } = {}) => {
-  const open = openPassages(srs.introducedIds());
-  if(!open.length) return go('home');
+  const passage = id === null ? nextPassage() : passages[id];
+  if(!passage) return go('home');
 
-  const passage = id === null ? pickPassage(open) : passages[id];
-  const wait = srs.unlockIn();
+  const word = wordById(passage.w);
+  const done = readCount(passage.w);
+  const round = Math.floor(done / ROUND_SIZE) + 1;
+  const inRound = (done % ROUND_SIZE) + 1;
 
   screen().innerHTML = `<h1>Reading practice</h1>
-    <p class="muted">${open.length} passage${open.length===1?'':'s'} open${wait ? ` · more in ${srs.hhmm(wait)}` : ''}</p>
+    <p class="muted">Round ${round} · <b>${word.word}</b>,
+      text ${Math.min(inRound, ROUND_SIZE)} of ${ROUND_SIZE}</p>
     <div class="card" id="stage"></div>
-    <button class="go" id="quiz">Answer the questions</button>
-    <button class="go ghost" id="another">Another passage</button>
+    <button class="go" id="quiz">Answer the question</button>
+    <button class="go ghost" id="another">Skip to the next text</button>
     ${backButton('Back','home')}`;
 
   initReader(screen().querySelector('#stage'), passage, DICT);
@@ -207,24 +210,47 @@ routes.reading = ({ id = null } = {}) => {
   wireBack();
 };
 
-/** Prefer a passage never read, and never the one just shown. */
+const readCount = wordId => shelfOf(wordId).filter(p => store.isPassageRead(p.id)).length;
+
+/**
+ * Five texts for a word, then five for the next, and once every word has had
+ * its five the next round of five opens. A word joins the round it is behind
+ * on, so words introduced later simply catch up.
+ */
+function nextPassage(){
+  const ids = [...srs.introducedIds()].sort((a,b) => a-b);
+  if(!ids.length) return null;
+
+  const unfinished = ids.filter(id => readCount(id) < shelfOf(id).length);
+  if(!unfinished.length) return rereadSomething(ids);
+
+  // the round everybody is working on is the one the least-read word is in
+  const round = Math.min(...unfinished.map(id => Math.floor(readCount(id) / ROUND_SIZE)));
+  const quota = (round + 1) * ROUND_SIZE;
+
+  for(const id of unfinished){
+    if(readCount(id) >= quota) continue;              // already did its five
+    const next = shelfOf(id).find(p => !store.isPassageRead(p.id));
+    if(next) return next;
+  }
+  return shelfOf(unfinished[0]).find(p => !store.isPassageRead(p.id)) || rereadSomething(ids);
+}
+
+/** Every text read at least once: keep going by revisiting them. */
 let lastPassage = null;
-function pickPassage(open){
-  let pool = open.filter(p => !store.isPassageRead(p.id));
-  if(!pool.length) pool = open;
-  if(pool.length > 1) pool = pool.filter(p => p.id !== lastPassage);
+function rereadSomething(ids){
+  const all = ids.flatMap(shelfOf);
+  const pool = all.length > 1 ? all.filter(p => p.id !== lastPassage) : all;
   const chosen = pool[Math.floor(Math.random()*pool.length)];
-  lastPassage = chosen.id;
-  return chosen;
+  lastPassage = chosen ? chosen.id : null;
+  return chosen || null;
 }
 
 routes.readingQuiz = ({ id }) => {
   const passage = passages[id];
-  // one question per target word, rotating gap / match / focus so a passage
-  // never asks the same way twice running, nor the same way twice over
-  const from = Math.floor(Math.random()*3);
-  const questions = passage.wordIds.map((wid, n) =>
-    questionFor(wordById(wid), words, from + n));
+  // one check on the word this text belongs to; the mechanic follows the
+  // text's place on the shelf, so five texts give five different angles
+  const questions = [questionFor(wordById(passage.w), words, passage.slot)];
   screen().innerHTML = '<div id="stage"></div>';
 
   runQuiz(screen().querySelector('#stage'), questions, {
@@ -236,7 +262,7 @@ routes.readingQuiz = ({ id }) => {
         <div class="card muted"><p>${score === total
           ? 'You read the meaning out of the sentences around it. That is how words are actually learned.'
           : 'Read it once more and look at what happens either side of the word.'}</p></div>
-        <button class="go" id="another">Another passage</button>
+        <button class="go" id="another">Next text</button>
         <button class="go ghost" id="again">Read it again</button>
         ${backButton('Back','home')}`;
       screen().querySelector('#another').onclick = () => go('reading');
