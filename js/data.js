@@ -1,0 +1,34 @@
+/* data.js - the data contract for the whole app.
+ *
+ * Everything the UI ever reads about words, lessons and passages comes
+ * through this module. Today it re-exports static JSON modules; when a
+ * Python backend arrives, only the three loaders below change to
+ *   const res = await fetch('/api/daily-lesson');
+ * and no screen has to be touched.
+ */
+import { words }    from './data/words.js';
+import { lessons }  from './data/lessons.js';
+import { passages } from './data/passages.js';
+
+export { words, lessons, passages };
+
+export const DAILY_NEW_LIMIT = 5;   // new words per rolling 24h
+
+/** One word by id. */
+export const wordById = id => words[id];
+
+/** Resolve a lesson's wordIds into full word objects (DRY: stored once). */
+export const lessonWords = lesson => lesson.wordIds.map(wordById);
+
+/** The lesson a word belongs to, or undefined. */
+export const lessonOfWord = id => lessons.find(l => l.wordIds.includes(id));
+
+/** Passages whose every target word is already in `knownIds`. */
+export const openPassages = knownIds =>
+  passages.filter(p => p.wordIds.every(id => knownIds.has(id)));
+
+/* The async shape a REST backend would use. Screens already call these,
+   so swapping the body for fetch() is the whole migration. */
+export async function fetchWords()    { return words; }
+export async function fetchLessons()  { return lessons; }
+export async function fetchPassages() { return passages; }

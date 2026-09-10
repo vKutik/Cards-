@@ -1,0 +1,38 @@
+/* main.css - the ground layer: font, palette, page, typography, layout.
+   Nothing component-specific lives here. */
+
+@import url("_font.css");
+
+:root{
+  --sans:'InterVar',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --paper:#EFEDE7; --card:#fff; --ink:#1A2028; --soft:#5C6670; --line:#CFD3CB;
+  --green:#1D6560; --green-d:#134A46; --amber:#B4600F; --red:#93342A; --track:#CBC8BF;
+  --wash-green:#EEF5F3; --wash-red:#FBEFEE; --wash-grey:#F6F5F1; --wash-mark:#E4EDE9;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font:400 16.5px/1.55 var(--sans); letter-spacing:-.005em;
+  padding:18px 16px 60px;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+}
+
+.wrap{max-width:34rem;margin:0 auto}
+
+h1{font-weight:640;font-size:1.7rem;letter-spacing:-.025em;margin:6px 0 16px}
+h2{font-size:.95rem;font-weight:620;letter-spacing:-.01em;margin:0 0 10px}
+p{margin:0 0 12px}
+a{color:var(--green-d)}
+
+.muted{color:var(--soft);font-size:.93rem}
+.pill{font-size:.8rem;font-weight:450;color:var(--soft);letter-spacing:0}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:none}
+.row b{font-weight:600;font-variant-numeric:tabular-nums}
+
+/* the one thing every screen shares: it is swapped wholesale on navigation */
+#screen{min-height:60vh}

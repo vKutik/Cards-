@@ -1,0 +1,47 @@
+/* reading.css - the reading screen only: passage text, the highlighted
+   target words, and the tooltip that opens when one is tapped. */
+
+.story{font-size:1.05rem;line-height:1.75}
+
+/* a target word inside a passage. It is a real <mark data-word="..."> so the
+   reader module can find it without the view knowing anything about words. */
+.story mark{
+  background:var(--wash-mark); color:inherit; font-weight:620;
+  padding:1px 3px; border-radius:2px; cursor:pointer;
+  border-bottom:1px solid rgba(29,101,96,.35);
+}
+.story mark:hover{background:#D6E5DF}
+.story mark.open{background:var(--green);color:#fff;border-bottom-color:transparent}
+
+.source{font-size:.8rem;color:var(--soft);margin-top:12px}
+
+/* example sentence blocks reuse the passage look at a smaller size */
+.ex{background:var(--wash-grey);border-left:3px solid var(--line);
+  padding:11px 13px;margin-bottom:10px;font-size:.98rem}
+.ex mark, .ex b{background:var(--wash-mark);padding:0 3px;border-radius:2px;
+  font-weight:600;color:inherit}
+
+/* gap-fill sentence */
+.cloze{font-size:1.15rem;font-weight:450;line-height:1.5;margin:14px 0 18px}
+.cloze u{text-decoration:none;border-bottom:2px solid var(--green);padding:0 26px}
+
+/* ---------- tooltip ---------- */
+#tooltip-layer{position:fixed;inset:0;pointer-events:none;z-index:50}
+
+.tooltip{
+  position:absolute; pointer-events:auto; max-width:min(20rem,calc(100vw - 32px));
+  background:var(--ink); color:#fff; border-radius:6px;
+  padding:10px 12px; font-size:.9rem; line-height:1.4;
+  box-shadow:0 6px 20px rgba(26,32,40,.28);
+  opacity:0; transform:translateY(4px); transition:opacity .12s ease,transform .12s ease;
+}
+.tooltip.show{opacity:1;transform:translateY(0)}
+.tooltip b{display:block;font-weight:620;font-size:.98rem;margin-bottom:2px}
+.tooltip .tr{color:#EBE7DE}
+.tooltip .hint{color:#B9C2C0;font-size:.84rem;margin-top:5px}
+.tooltip:after{content:"";position:absolute;left:var(--arrow,50%);margin-left:-6px;
+  border:6px solid transparent}
+.tooltip.below:after{top:-12px;border-bottom-color:var(--ink)}
+.tooltip.above:after{bottom:-12px;border-top-color:var(--ink)}
+
+@media (prefers-reduced-motion:reduce){.tooltip{transition:none}}

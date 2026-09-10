@@ -1,0 +1,85 @@
+/* components.css - buttons, cards, the progress ring, quiz options, word rows.
+   Every rule here is about a reusable piece, never about one screen. */
+
+/* ---------- buttons ---------- */
+button{font:inherit;cursor:pointer;border-radius:4px}
+
+.go{display:block;width:100%;background:var(--green);color:#fff;border:none;
+  padding:14px;font-weight:580;letter-spacing:-.005em;margin-bottom:10px}
+.go:hover{background:var(--green-d)}
+.go.ghost{background:#fff;color:var(--green-d);border:1px solid var(--green)}
+.go[disabled]{opacity:.4;cursor:default}
+.go[disabled]:hover{background:var(--green)}
+.go.ghost[disabled]:hover{background:#fff}
+
+.linkbtn{display:block;width:100%;background:none;border:none;color:var(--soft);
+  font-size:.85rem;padding:10px;margin-top:2px}
+.linkbtn:hover{color:var(--green-d)}
+
+.say{background:#fff;border:1px solid var(--line);color:var(--green-d);
+  padding:8px 14px;font-size:.88rem;font-weight:520;margin-bottom:14px}
+.say.tiny{margin:0 0 0 auto;padding:3px 9px;font-size:.8rem}
+
+/* ---------- card ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:5px;
+  padding:18px;margin-bottom:14px}
+
+/* ---------- flashcard ---------- */
+.word{font-size:2.3rem;font-weight:640;letter-spacing:-.035em;line-height:1.08;margin:6px 0}
+.pos{color:var(--soft);font-size:.92rem;font-weight:450;letter-spacing:0;margin-bottom:14px}
+.def{font-size:1.05rem;font-weight:450;margin-bottom:12px}
+.uk{font-size:1.05rem;font-weight:520;color:var(--green-d);margin-bottom:12px}
+.anto{font-size:.95rem;color:var(--soft)}
+.exnav{font-size:.8rem;color:var(--soft);margin-top:2px}
+
+/* ---------- quiz ---------- */
+.opt{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);
+  padding:12px 14px;margin-bottom:8px;color:var(--ink)}
+.opt:hover{border-color:var(--green)}
+.opt.right{border-color:var(--green);background:var(--wash-green)}
+.opt.wrong{border-color:var(--red);background:var(--wash-red)}
+
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grade button{padding:13px 8px;border:1px solid var(--line);background:#fff;
+  color:var(--ink);font-weight:580;letter-spacing:-.01em}
+.grade button small{display:block;font-weight:400;color:var(--soft);font-size:.78rem}
+.g0{border-color:var(--red)!important;color:var(--red)!important}
+.g3{border-color:var(--green)!important;color:var(--green-d)!important}
+
+.fb{padding:10px 12px;border-radius:4px;margin-bottom:12px;font-size:.95rem}
+.fb.ok{background:var(--wash-green);border-left:3px solid var(--green)}
+.fb.no{background:var(--wash-red);border-left:3px solid var(--red)}
+
+/* ---------- progress ---------- */
+.bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:16px}
+.bar span{display:block;height:100%;background:var(--green);width:0}
+
+.gauge{margin:10px 0 4px}
+.seg{fill:none;stroke-width:15;stroke-linecap:butt}
+.gnum{font-family:var(--sans);font-size:46px;font-weight:640;letter-spacing:-.03em;fill:var(--ink)}
+.gpct{font-size:20px;font-weight:500;fill:var(--soft)}
+
+.key{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 16px;
+  margin:-2px 0 18px;font-size:.82rem;color:var(--soft)}
+.key span{display:flex;align-items:center;gap:6px}
+.key b{font-weight:560;color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* the four steps a word moves through, one colour each */
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none}
+.dot.started{background:var(--red)}
+.dot.read{background:var(--amber)}
+.dot.known{background:var(--green)}
+
+/* ---------- lesson / word rows ---------- */
+.pick{text-align:left;padding:13px 16px}
+.pick small{display:block;font-weight:400;color:var(--soft);font-size:.8rem;margin-top:2px}
+.item{padding:14px 16px}
+.ihead{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.ihead b{font-size:1.15rem;font-weight:620;letter-spacing:-.02em}
+.ipos{color:var(--soft);font-size:.85rem}
+.idef{font-size:.97rem;margin-bottom:8px}
+
+/* ---------- stage strip ---------- */
+.stages{display:flex;gap:6px;margin-bottom:16px}
+.stages i{flex:1;height:3px;border-radius:2px;background:var(--line)}
+.stages i.on{background:var(--green)}
