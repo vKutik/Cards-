@@ -19,7 +19,7 @@ const daysBetween = (a,b) => Math.round((new Date(b) - new Date(a)) / DAY);
  *   known   box 4, the interval is months      green
  * Reading only recolours a word; it never moves its due date.
  */
-export const STEP_NAME = { started:'started', read:'read in a text', known:'known' };
+export const STEP_NAME = { started:'Started', read:'Seen', known:'Learned' };
 
 export function stepOf(id){
   const s = store.getWord(id);

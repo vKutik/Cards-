@@ -18,7 +18,7 @@ export function progressRing(c){
 
   return `
   <div class="gauge">
-    <svg viewBox="0 0 220 124" width="100%" role="img" aria-label="${pct}% known">
+    <svg viewBox="0 0 220 124" width="100%" role="img" aria-label="${pct}% learned">
       ${seg('var(--track)', ARC)}
       ${seg('var(--red)', red)}
       ${seg('var(--amber)', amber)}
@@ -27,9 +27,9 @@ export function progressRing(c){
     </svg>
   </div>
   <div class="key">
-    <span><i class="dot known"></i>known <b>${c.known}</b></span>
-    <span><i class="dot read"></i>read in a text <b>${c.read}</b></span>
-    <span><i class="dot started"></i>started <b>${c.started}</b></span>
+    <span>🟢 Learned <b>${c.known}</b></span>
+    <span>🟠 Seen <b>${c.read}</b></span>
+    <span>🔴 Started <b>${c.started}</b></span>
   </div>`;
 }
 
