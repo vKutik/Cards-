@@ -1,6 +1,6 @@
 /* review.js - the spaced-repetition screen. Recall first, reveal second,
  * then say how hard it was; srs.js turns that into the next due date. */
-import { sessionBar } from './progress.js';
+import { familiarityDots } from './progress.js';
 import { exampleOf, exampleNo, nextExample, withMarks } from './flashcard.js';
 import { speak } from './audio.js';
 import * as srs from '../srs.js';
@@ -27,7 +27,7 @@ export function renderReview(container, word, pos, handlers){
   if(!pos.revealed){
     // alternate between "which word is missing" and "what does it mean"
     const askCloze = seen % 2 === 0;
-    container.innerHTML = sessionBar(pos.index, pos.total) + `
+    container.innerHTML = `
       <div class="top">
         <span class="pill">Review ${pos.index+1} of ${pos.total}</span>
         <span class="pill">${srs.STEP_NAME[srs.stepOf(word.id)]}</span>
@@ -46,7 +46,7 @@ export function renderReview(container, word, pos, handlers){
 
   container.innerHTML = `
     <div class="card">
-      <div class="word">${word.word}</div>
+      <div class="word">${word.word}${pos.fam ? familiarityDots(pos.fam) : ''}</div>
       <div class="pos">/${word.ipa}/ · ${word.pos}</div>
       <button class="say" data-say="${word.word}">🔊 listen</button>
       <!-- translation hidden in the UI for now, see flashcard.js -->

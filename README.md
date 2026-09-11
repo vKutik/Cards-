@@ -90,23 +90,46 @@ what the word actually means. It moves on by itself, or sooner if you tap.
 The story's own comprehension questions run through the same runner and get
 the same treatment.
 
-## Reading practice
+## Reading practice, on a growing interval
 
 Every word owns a shelf of **ten passages**, and a passage belongs to exactly
-one word, so "ten texts for this word" is literally true. A passage opens as
-soon as its own word has been introduced — other course words it happens to
-contain are highlighted for the tooltip but do not gate it.
+one word. When a word comes round, one of its ten is drawn **at random** from
+those you have not read yet — so the word returns in a different text every
+time, never the same page twice while an unread one is left.
 
-The shelves are worked through **five at a time**: five texts for the first
-word, five for the next, and once every word has had its five, round two
-opens with texts six to ten. A word introduced later simply joins the round
-it is behind on. The header says where you are — `Round 1 · shallow, text 3
-of 5`. After the last text of the last round, it keeps going by revisiting
-what you have already read, so there is always more practice available.
+The gap between visits widens with every success, following the forgetting
+curve rather than a fixed rota (`READ_STEPS` in `srs.js`):
+
+| Visit | 1st | 2nd | 3rd | 4th | 5th | 6th | 7th+ |
+|---|---|---|---|---|---|---|---|
+| Days later | 1 | 3 | 7 | 16 | 35 | 90 | 180 |
+
+Answer from the text and the word moves up a rung. Miss it and it drops to
+the bottom — back tomorrow — which is what keeps the schedule honest. The
+first text is offered the moment a word is introduced, since the lesson was
+the meeting and the texts are the repetitions.
+
+When nothing is due the screen says so and names the day the next word comes
+round, with a *Read ahead anyway* button for when you want more than the
+spacing asks of you.
 
 Each text is followed by one check on its word, and the mechanic follows the
-text's place on the shelf — so five texts give gap, match, focus, gap, match
-rather than the same question five times.
+text's place on the shelf, so the questions vary as the texts do.
+
+### The familiarity index
+
+Three dots beside a word instead of a percentage — the story of your
+relationship with it rather than a score:
+
+| | Meaning |
+|---|---|
+| ◦ ◦ ◦ | never met it in a text |
+| ● ◦ ◦ | read it inside a real passage |
+| ● ● ◦ | answered for it correctly from that passage |
+| ▬▬▬ | mastered — the dots close into one line |
+
+Leave a word far past its due date and the last lit dot fades to an outline:
+the forgetting curve showing through, as a nudge rather than a penalty.
 
 ### Where the texts come from
 
@@ -120,11 +143,11 @@ They were mined from the corpus and filtered, not hand-picked one by one, so
 the pipeline does the quality work:
 
 - **Wrong senses are blocked.** A regex has no idea that "attaching
-  significance" is not the `attach` this course teaches, so 53 words carry an explicit list
-  of collocations to reject, plus a rule that a physical word sitting beside a
-  strongly abstract noun is the other sense. Some off-sense uses still get
-  through — roughly one text in ten — which is the honest limit of matching
-  senses without a language model.
+  significance" is not the `attach` this course teaches, so 53 words carry an
+  explicit list of collocations to reject, plus a rule that a physical word
+  sitting beside a strongly abstract noun is the other sense. Some off-sense
+  uses still get through — roughly one text in ten — which is the honest limit
+  of matching senses without a language model.
 - **Offensive material is dropped.** Period fiction carries slurs; anything
   matching that list, or reading as a broken fragment, is thrown out.
 - **Readable books are preferred.** Each book is scored for sentence length

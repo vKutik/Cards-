@@ -23,9 +23,9 @@ export const lessonWords = lesson => lesson.wordIds.map(wordById);
 /** The lesson a word belongs to, or undefined. */
 export const lessonOfWord = id => lessons.find(l => l.wordIds.includes(id));
 
-/** How many passages every word carries, and how many make up one round. */
+/** How many passages every word carries. One is drawn each time the word
+ *  comes round on its reading interval - see srs.READ_STEPS. */
 export const SHELF_SIZE = 10;
-export const ROUND_SIZE = 5;
 
 /* Every word owns a shelf of SHELF_SIZE passages, ordered by `slot`. A
    passage belongs to exactly one word, so "ten texts for this word" is

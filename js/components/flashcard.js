@@ -2,7 +2,7 @@
  * sentence around it. No test here: a test one second after reading the
  * answer proves nothing, the real check is the review tomorrow.
  */
-import { sessionBar } from './progress.js';
+import { familiarityDots } from './progress.js';
 import { speak } from './audio.js';
 import * as store from '../storage.js';
 
@@ -22,10 +22,10 @@ export const withMarks = s => s.replace(/\{(.+?)\}/g, '<mark>$1</mark>');
  * @param {{onNext:Function, onRerender:Function}} handlers
  */
 export function renderFlashcard(container, word, pos, handlers){
-  container.innerHTML = sessionBar(pos.index, pos.total) + `
+  container.innerHTML = `
     <div class="top"><span class="pill">${pos.label}</span></div>
     <div class="card">
-      <div class="word">${word.word}</div>
+      <div class="word">${word.word}${pos.fam ? familiarityDots(pos.fam) : ''}</div>
       <div class="pos">/${word.ipa}/ · ${word.pos}</div>
       <button class="say" data-say="${word.word}">🔊 listen</button>
       <!-- word.translation exists on every word (see js/data/words.js) but is

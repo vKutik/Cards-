@@ -33,10 +33,21 @@ export function progressRing(c){
   </div>`;
 }
 
-/** Thin bar used inside a session. */
-export const sessionBar = (done, total) =>
-  `<div class="bar"><span style="width:${Math.round(100*done/Math.max(1,total))}%"></span></div>`;
-
-/** Three dots showing where you are inside a lesson. */
-export const stageStrip = step =>
-  `<div class="stages">${[0,1,2].map(i => `<i class="${i<=step?'on':''}"></i>`).join('')}</div>`;
+/**
+ * The familiarity index: three dots telling the story of one word rather
+ * than a percentage. Filled dots are steps taken; a cooling one has faded
+ * because the word is long past due. At three the dots close into a line.
+ *
+ * @param {{level:number, cooling:boolean}} fam from srs.familiarity()
+ */
+export function familiarityDots(fam){
+  const titles = ['not met in a text yet', 'read in a text',
+                  'answered from the text', 'mastered'];
+  const dots = [0,1,2].map(i => {
+    if(i >= fam.level) return '<i></i>';
+    const last = i === fam.level - 1;
+    return `<i class="on${fam.cooling && last ? ' cool' : ''}"></i>`;
+  }).join('');
+  return `<span class="fam${fam.level === 3 ? ' full' : ''}"
+    role="img" aria-label="${titles[fam.level]}" title="${titles[fam.level]}">${dots}</span>`;
+}

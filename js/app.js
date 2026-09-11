@@ -3,11 +3,11 @@
  * anything themselves (storage.js) and never schedule anything (srs.js).
  */
 import { words, lessons, passages, wordById, lessonWords, openPassages,
-         shelfOf, ROUND_SIZE, DAILY_NEW_LIMIT } from './data.js';
+         shelfOf, DAILY_NEW_LIMIT } from './data.js';
 import * as store from './storage.js';
 import * as srs from './srs.js';
 import * as settings from './settings.js';
-import { progressRing, stageStrip, sessionBar } from './components/progress.js';
+import { progressRing, familiarityDots } from './components/progress.js';
 import { renderFlashcard, withMarks } from './components/flashcard.js';
 import { speak } from './components/audio.js';
 import { renderReview } from './components/review.js';
@@ -54,8 +54,7 @@ routes.home = () => {
   screen().innerHTML = progressRing(counts) + `
     ${dueIds.length ? `<button class="go" id="review">Review ${dueIds.length} word${dueIds.length===1?'':'s'}</button>` : ''}
     <button class="go ${dueIds.length ? 'ghost' : ''}" id="lesson" ${lesson ? '' : 'disabled'}>
-      ${lesson ? `${resumeStage(lesson) ? 'Continue' : 'Lesson'} ${lesson.id} · ${lesson.title}`
-                : (wait ? `New words in ${srs.hhmm(wait)}` : 'All lessons opened')}
+      ${lesson ? 'Learn' : (wait ? `New words in ${srs.hhmm(wait)}` : 'All words opened')}
     </button>
     <button class="go ghost" id="reading" ${reading.length ? '' : 'disabled'}>Reading practice</button>
     <button class="go ghost" id="list">Word list</button>
@@ -98,11 +97,12 @@ routes.lesson = ({ id, stage = 0, i = 0 }) => {
 
 function lessonCards(lesson, ws, i){
   const word = ws[i];
-  const head = `<h1>${lesson.title}</h1>` + stageStrip(0);
+  const head = `<h1>${lesson.title}</h1>`;
   screen().innerHTML = head + '<div id="stage"></div>';
 
   renderFlashcard(screen().querySelector('#stage'), word,
     { index:i, total:ws.length, label:`New word ${i+1} of ${ws.length}`,
+      fam: srs.familiarity(word.id, textsRead(word.id)),
       next: i === ws.length-1 ? 'Read the story' : 'Got it' },
     {
       onNext: async () => {
@@ -116,7 +116,7 @@ function lessonCards(lesson, ws, i){
 }
 
 function lessonReading(lesson, ws){
-  screen().innerHTML = `<h1>${lesson.title}</h1>` + stageStrip(1) + `
+  screen().innerHTML = `<h1>${lesson.title}</h1>` + `
     <p class="muted">All five of today's words are in this text. Tap any highlighted
       word if you need its meaning.</p>
     <div class="card" id="stage"></div>
@@ -138,7 +138,7 @@ function lessonQuiz(lesson, ws){
     ...lesson.quiz,
     anyQuestion(ws[Math.floor(Math.random()*ws.length)], words)
   ];
-  screen().innerHTML = `<h1>${lesson.title}</h1>` + stageStrip(2) + '<div id="stage"></div>';
+  screen().innerHTML = `<h1>${lesson.title}</h1><div id="stage"></div>`;
 
   runQuiz(screen().querySelector('#stage'), questions, {
     onAnswer: (q, ok) => { if(ok && q.wordId != null) store.markReadCorrect(q.wordId); },
@@ -173,7 +173,7 @@ routes.review = params => {
   const word = wordById(queue[i]);
   screen().innerHTML = '<div id="stage"></div>';
   renderReview(screen().querySelector('#stage'), word,
-    { index:i, total:queue.length, revealed },
+    { index:i, total:queue.length, revealed, fam: srs.familiarity(word.id, textsRead(word.id)) },
     {
       onReveal: () => go('review', { ...params, revealed:true }),
       onRerender: rerender,
@@ -186,64 +186,81 @@ routes.review = params => {
     });
 };
 
-/* ---------------- extra reading ---------------- */
-routes.reading = ({ id = null } = {}) => {
-  const passage = id === null ? nextPassage() : passages[id];
+/* ---------------- reading on a growing interval ---------------- */
+/**
+ * A word comes back in a *different* text every time, and the gap between
+ * visits widens with every success. What you see is one text drawn at random
+ * from the ten that word owns - never one you have already read while any
+ * unread one is left.
+ */
+routes.reading = ({ id = null, ahead = false } = {}) => {
+  const due = srs.readingDue();
+
+  if(!due.length && !ahead && id === null) return readingRested();
+
+  const passage = id !== null ? passages[id]
+                : pickText(due.length ? due[0] : anyIntroduced());
   if(!passage) return go('home');
 
   const word = wordById(passage.w);
-  const done = readCount(passage.w);
-  const round = Math.floor(done / ROUND_SIZE) + 1;
-  const inRound = (done % ROUND_SIZE) + 1;
+  const step = (store.readingPlan(passage.w) || { step:0 }).step;
+  const late = srs.overdueBy(passage.w);
 
   screen().innerHTML = `<h1>Reading practice</h1>
-    <p class="muted">Round ${round} · <b>${word.word}</b>,
-      text ${Math.min(inRound, ROUND_SIZE)} of ${ROUND_SIZE}</p>
+    <p class="muted"><b>${word.word}</b> · text ${textsRead(passage.w) + 1} of
+      ${shelfOf(passage.w).length}${late > 1 ? ` · ${late} days overdue` : ''}
+      ${due.length > 1 ? ` · ${due.length - 1} more waiting` : ''}</p>
     <div class="card" id="stage"></div>
     <button class="go" id="quiz">Answer the question</button>
-    <button class="go ghost" id="another">Skip to the next text</button>
+    <button class="go ghost" id="another">Another word</button>
     ${backButton('Back','home')}`;
 
   initReader(screen().querySelector('#stage'), passage, DICT);
   screen().querySelector('#quiz').onclick = () => go('readingQuiz', { id: passage.id });
-  screen().querySelector('#another').onclick = () => go('reading');
+  screen().querySelector('#another').onclick = () => go('reading', { ahead });
   wireBack();
 };
 
-const readCount = wordId => shelfOf(wordId).filter(p => store.isPassageRead(p.id)).length;
-
-/**
- * Five texts for a word, then five for the next, and once every word has had
- * its five the next round of five opens. A word joins the round it is behind
- * on, so words introduced later simply catch up.
- */
-function nextPassage(){
-  const ids = [...srs.introducedIds()].sort((a,b) => a-b);
-  if(!ids.length) return null;
-
-  const unfinished = ids.filter(id => readCount(id) < shelfOf(id).length);
-  if(!unfinished.length) return rereadSomething(ids);
-
-  // the round everybody is working on is the one the least-read word is in
-  const round = Math.min(...unfinished.map(id => Math.floor(readCount(id) / ROUND_SIZE)));
-  const quota = (round + 1) * ROUND_SIZE;
-
-  for(const id of unfinished){
-    if(readCount(id) >= quota) continue;              // already did its five
-    const next = shelfOf(id).find(p => !store.isPassageRead(p.id));
-    if(next) return next;
-  }
-  return shelfOf(unfinished[0]).find(p => !store.isPassageRead(p.id)) || rereadSomething(ids);
+/** Nothing is due: say when the next word comes round, and offer to go early. */
+function readingRested(){
+  const days = srs.nextReadingIn();
+  const open = srs.introducedIds().size;
+  screen().innerHTML = `<h1>Reading practice</h1>
+    <div class="card">
+      <p class="def">Nothing is due right now.</p>
+      <p class="muted">${days
+        ? `The next word comes round ${days === 1 ? 'tomorrow' : `in ${days} days`}.
+           Coming back exactly when a word starts to fade is the whole point of
+           the spacing - but you can read ahead if you want to.`
+        : 'Open some words first and their texts will start arriving here.'}</p>
+    </div>
+    ${open ? `<button class="go ghost" id="ahead">Read ahead anyway</button>` : ''}
+    ${backButton('Back','home')}`;
+  const a = screen().querySelector('#ahead');
+  if(a) a.onclick = () => go('reading', { ahead:true });
+  wireBack();
 }
 
-/** Every text read at least once: keep going by revisiting them. */
+const textsRead = wordId => shelfOf(wordId).filter(p => store.isPassageRead(p.id)).length;
+
+/** One of the word's ten, drawn at random from those not yet read. */
 let lastPassage = null;
-function rereadSomething(ids){
-  const all = ids.flatMap(shelfOf);
-  const pool = all.length > 1 ? all.filter(p => p.id !== lastPassage) : all;
+function pickText(wordId){
+  if(wordId == null) return null;
+  const shelf = shelfOf(wordId);
+  let pool = shelf.filter(p => !store.isPassageRead(p.id));
+  if(!pool.length) pool = shelf;                       // all ten read: revisit
+  if(pool.length > 1) pool = pool.filter(p => p.id !== lastPassage);
   const chosen = pool[Math.floor(Math.random()*pool.length)];
   lastPassage = chosen ? chosen.id : null;
   return chosen || null;
+}
+
+/** Reading ahead of schedule: whichever word is closest to its turn. */
+function anyIntroduced(){
+  const ids = [...srs.introducedIds()];
+  if(!ids.length) return null;
+  return ids.sort((a,b) => srs.overdueBy(b) - srs.overdueBy(a))[0];
 }
 
 routes.readingQuiz = ({ id }) => {
@@ -258,11 +275,13 @@ routes.readingQuiz = ({ id }) => {
     onAnswer: (q, ok) => { if(ok) store.markReadCorrect(q.wordId); },
     onDone: async (score, total) => {
       await store.markPassageRead(passage.id);
+      // right: the next text for this word moves further out. wrong: tomorrow.
+      await srs.gradeReading(passage.w, score === total);
       screen().innerHTML = `<h1>${score} of ${total}</h1>
         <div class="card muted"><p>${score === total
           ? 'You read the meaning out of the sentences around it. That is how words are actually learned.'
           : 'Read it once more and look at what happens either side of the word.'}</p></div>
-        <button class="go" id="another">Next text</button>
+        <button class="go" id="another">Next word</button>
         <button class="go ghost" id="again">Read it again</button>
         ${backButton('Back','home')}`;
       screen().querySelector('#another').onclick = () => go('reading');
@@ -282,7 +301,8 @@ routes.list = () => {
   const body = seen.length ? seen.map(w => `
     <div class="card item">
       <div class="ihead">
-        <span class="dot ${srs.stepOf(w.id)}"></span><b>${w.word}</b>
+        <b>${w.word}</b>
+        ${familiarityDots(srs.familiarity(w.id, textsRead(w.id)))}
         <span class="ipos">/${w.ipa}/ · ${w.pos}</span>
         <button class="say tiny" data-say="${w.word}">🔊</button>
       </div>

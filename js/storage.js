@@ -10,10 +10,12 @@
  *   rw    : { [wordId]: 1 }   answered correctly inside a passage
  *   read  : { [passageId]: 1 }
  *   lesson: { [lessonId]: 'reading' | 'quiz' | 'done' }
+ *   rsched: { [wordId]: { step, next } }  when this word is next due a text
  */
 const KEY = 'vocab-progress';
 
-const empty = () => ({ words:{}, ex:{}, rw:{}, read:{}, lesson:{}, log:{}, streak:0, last:null });
+const empty = () => ({ words:{}, ex:{}, rw:{}, read:{}, lesson:{}, rsched:{},
+                       log:{}, streak:0, last:null });
 
 let state = empty();
 
@@ -51,7 +53,7 @@ const Backend = {
 export async function load(){
   const raw = await Backend.read();
   if(raw){ try { state = { ...empty(), ...JSON.parse(raw) }; } catch(e){} }
-  for(const k of ['words','ex','rw','read','lesson','log']) if(!state[k]) state[k] = {};
+  for(const k of ['words','ex','rw','read','lesson','rsched','log']) if(!state[k]) state[k] = {};
   // progress saved before the daily cap existed has no `new` stamp
   for(const id of Object.keys(state.words)){
     const s = state.words[id];
@@ -80,6 +82,10 @@ export const isPassageRead = pid => !!state.read[pid];
 
 export function setLessonStage(lessonId, stage){ state.lesson[lessonId] = stage; return save(); }
 export const lessonStage = lessonId => state.lesson[lessonId] || null;
+
+/* ---------- when each word is next due a reading ---------- */
+export const readingPlan = wordId => state.rsched[wordId] || null;
+export function setReadingPlan(wordId, plan){ state.rsched[wordId] = plan; return save(); }
 
 /** Daily right/wrong tally, used by the end-of-session summary. */
 export function logAnswer(right){

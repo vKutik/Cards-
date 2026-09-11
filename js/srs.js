@@ -76,6 +76,9 @@ export function introduce(id){
   const d = new Date(); d.setDate(d.getDate() + STEPS[0]);
   s.next = d.toISOString().slice(0,10);
   s.lastSeen = today();
+  // the lesson was the first meeting; the first text is offered straight away,
+  // and only then do the intervals start growing
+  if(!store.readingPlan(id)) store.setReadingPlan(id, { step:0, next: today() });
   return store.putWord(id, s);
 }
 
@@ -90,4 +93,81 @@ export function grade(id, g){
   s.lastSeen = today();
   store.logAnswer(g > 0);
   return store.putWord(id, s);
+}
+
+/* ================= reading on a growing interval =================
+ *
+ * Ebbinghaus, applied to context rather than to cards: a word comes back in
+ * a *different* text each time, and the gap widens with every success -
+ * a day, then three, a week, a fortnight, a month, three months, half a year.
+ * Miss it and the word drops to the start of the ladder, which is what makes
+ * the schedule honest rather than decorative.
+ */
+export const READ_STEPS = [1, 3, 7, 16, 35, 90, 180];
+
+const addDays = n => {
+  const d = new Date(); d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
+};
+
+/** Words whose next text is due today or overdue, most overdue first. */
+export function readingDue(){
+  const t = today();
+  return [...introducedIds()]
+    .filter(id => {
+      const plan = store.readingPlan(id);
+      return plan && daysBetween(plan.next, t) >= 0;
+    })
+    .sort((a,b) => daysBetween(store.readingPlan(b).next, t)
+                 - daysBetween(store.readingPlan(a).next, t));
+}
+
+/** How long until the next word is due a text, in days; null if none waiting. */
+export function nextReadingIn(){
+  const t = today();
+  const waits = [...introducedIds()]
+    .map(id => store.readingPlan(id))
+    .filter(Boolean)
+    .map(plan => -daysBetween(plan.next, t))
+    .filter(d => d > 0);
+  return waits.length ? Math.min(...waits) : null;
+}
+
+/** Answered from the text: widen the gap. Missed it: back to the first rung. */
+export function gradeReading(id, ok){
+  const plan = store.readingPlan(id) || { step:0, next: today() };
+  const step = ok ? Math.min(READ_STEPS.length - 1, plan.step + 1) : 0;
+  return store.setReadingPlan(id, { step, next: addDays(READ_STEPS[step]) });
+}
+
+/** Days a word is overdue for its next text, 0 when it is not. */
+export function overdueBy(id){
+  const plan = store.readingPlan(id);
+  if(!plan) return 0;
+  return Math.max(0, daysBetween(plan.next, today()));
+}
+
+/* ================= the familiarity index =================
+ *
+ * Three dots, not a percentage: how far you and this word have got.
+ *   0  never met it in a text
+ *   1  read it once inside a real passage
+ *   2  answered for it correctly from that passage
+ *   3  mastered - months between reviews, and proven in context
+ *
+ * `cooling` is the forgetting curve showing through: leave a word long past
+ * its due date and the last lit dot fades, as a nudge rather than a penalty.
+ */
+export function familiarity(id, textsRead = 0){
+  const w = store.getWord(id);
+  if(!w) return { level: 0, cooling: false };
+
+  let level = textsRead > 0 ? 1 : 0;
+  if(store.isReadProven(id)) level = 2;
+  if(w.box >= 4 && store.isReadProven(id)) level = 3;
+
+  const plan = store.readingPlan(id);
+  const slack = plan ? READ_STEPS[plan.step] : 1;
+  const cooling = level > 0 && overdueBy(id) > slack;   // well past its turn
+  return { level, cooling };
 }

@@ -12,7 +12,6 @@
  * same feedback: a miss never flashes red, it lifts the right answer in
  * amber and says what the word actually means.
  */
-import { sessionBar } from './progress.js';
 
 /* ---------- reading the {target} marker inside an example ---------- */
 const MARKER = /\{(.+?)\}/;
@@ -213,7 +212,7 @@ export function runQuiz(container, questions, handlers){
     // Yes/No keeps its order; everything else is shuffled
     const opts = q.kind === 'focus' ? tagged : shuffle(tagged);
 
-    container.innerHTML = sessionBar(i, questions.length) + `
+    container.innerHTML = `
       <div class="top"><span class="pill">Question ${i+1} of ${questions.length}</span></div>
       <div class="card qcard">
         ${BODY[q.kind](q)}
