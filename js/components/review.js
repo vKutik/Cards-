@@ -2,7 +2,7 @@
  * then say how hard it was; srs.js turns that into the next due date. */
 import { familiarityDots } from './progress.js';
 import { exampleOf, exampleNo, nextExample, withMarks } from './flashcard.js';
-import { speak } from './audio.js';
+import { say } from './audio.js';
 import * as srs from '../srs.js';
 import * as store from '../storage.js';
 
@@ -48,7 +48,7 @@ export function renderReview(container, word, pos, handlers){
     <div class="card">
       <div class="word">${word.word}${pos.fam ? familiarityDots(pos.fam) : ''}</div>
       <div class="pos">/${word.ipa}/ · ${word.pos}</div>
-      <button class="say" data-say="${word.word}">🔊 listen</button>
+      <button class="say" data-say="${word.id}">🔊 listen</button>
       <!-- translation hidden in the UI for now, see flashcard.js -->
       <div class="def">${word.definition}</div>
       <div class="ex">${withMarks(exampleOf(word))}</div>
@@ -61,7 +61,7 @@ export function renderReview(container, word, pos, handlers){
       ${GRADES.map(x => `<button class="${x.cls}" data-g="${x.g}">${x.label}<small>${x.note}</small></button>`).join('')}
     </div>`;
 
-  container.querySelector('[data-say]').onclick = () => speak(word.word);
+  container.querySelector('[data-say]').onclick = () => say(word.id, word.word);
   container.querySelector('#alt').onclick = async () => { await nextExample(word); handlers.onRerender(); };
   container.querySelectorAll('[data-g]').forEach(b =>
     b.onclick = () => handlers.onGrade(+b.dataset.g));

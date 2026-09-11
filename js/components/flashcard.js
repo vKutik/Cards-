@@ -3,7 +3,7 @@
  * answer proves nothing, the real check is the review tomorrow.
  */
 import { familiarityDots } from './progress.js';
-import { speak } from './audio.js';
+import { say } from './audio.js';
 import * as store from '../storage.js';
 
 /** The example currently chosen for a word, and how to step through them. */
@@ -27,7 +27,7 @@ export function renderFlashcard(container, word, pos, handlers){
     <div class="card">
       <div class="word">${word.word}${pos.fam ? familiarityDots(pos.fam) : ''}</div>
       <div class="pos">/${word.ipa}/ · ${word.pos}</div>
-      <button class="say" data-say="${word.word}">🔊 listen</button>
+      <button class="say" data-say="${word.id}">🔊 listen</button>
       <!-- word.translation exists on every word (see js/data/words.js) but is
            hidden in the UI for now, per request - data stays, display doesn't. -->
       <div class="def">${word.definition}</div>
@@ -38,7 +38,7 @@ export function renderFlashcard(container, word, pos, handlers){
     <button class="go" id="next">${pos.next}</button>
     <button class="go ghost" id="alt">Show another example</button>`;
 
-  container.querySelector('[data-say]').onclick = () => speak(word.word);
+  container.querySelector('[data-say]').onclick = () => say(word.id, word.word);
   container.querySelector('#next').onclick = handlers.onNext;
   container.querySelector('#alt').onclick = async () => {
     await nextExample(word);

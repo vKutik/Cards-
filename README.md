@@ -25,6 +25,7 @@ styles/
   components.css           buttons, cards, gauge, quiz options, word rows
   reading.css              passage text, highlighted words, tooltip
   _font.css                the embedded Inter subset
+audio/                     100 pronunciation recordings, one per word
 js/
   app.js                   entry point: boot, router, screens
   data.js                  the data contract (re-exports + helpers)
@@ -35,13 +36,15 @@ js/
     words.js               100 words: ipa, translation, definition, examples
     lessons.js             20 lessons: 5 wordIds, a marked-up text, a quiz
     passages.js            1000 reading passages, ten for every word
+    pronunciation.js       the recording, speaker and licence per word
   components/
     progress.js            the round gauge and its legend
     flashcard.js           stage 1 card
     reader.js              stage 2: paints a passage, hangs tooltips
     tooltip.js             one tooltip at a time, positioned and flipped
     quiz.js                stage 3: the three mechanics and the runner
-    audio.js               the one place that talks to SpeechSynthesis
+    audio.js               plays the recording, falls back to SpeechSynthesis
+    motion.js              how a screen arrives: cross-fade, or ease-in
     review.js              the spaced-repetition screen
 ```
 
@@ -59,7 +62,7 @@ js/
 ## Learning flow
 
 1. **Daily limit** — 5 new words per rolling 24 hours.
-2. **Stage 1, flashcards** — word, transcription, audio, definition, one
+2. **Stage 1, flashcards** — word, transcription, recording, definition, one
    example. Five cards.
 3. **Stage 2, reading** — a short text weaving in all five words. Tap any
    highlighted word for a tooltip with its transcription, a speaker button
@@ -178,6 +181,31 @@ stays put. To bring it back, drop the `.uk` markup back into
 `flashcard.js`, `review.js`, the word-list row in `app.js`, and pass
 `translation` into the `showTooltip()` call in `reader.js`; `tooltip.js`
 already renders it when present.
+
+## Pronunciation
+
+Every word is spoken by a real person, not a speech synthesiser. The 100
+recordings come from **Wiktionary** and Wikimedia Commons, chosen per word in
+this order: an `En-us-` recording first (the app teaches American
+transcription), then British, then Lingua Libre English.
+
+They are **served from this repository** rather than hot-linked. Wikimedia
+rate-limits bursts — a word list where you tap several words in a row is
+exactly such a burst — and a tap should not wait on a third-party round trip.
+`audio/` is 1.9 MB for all 100 files.
+
+`js/components/audio.js` plays the recording and only falls back to
+SpeechSynthesis when a file is missing or the browser refuses to play it, so
+nothing goes silent.
+
+### Credit
+
+Most of the licences (CC BY-SA 3.0 and 4.0) require attribution, so the
+speakers are credited in the app itself, on the Settings screen, and each
+entry in `js/data/pronunciation.js` keeps its speaker, licence and the
+Commons page it came from. The recordings are by Dvortygirl (74), Vealhurl
+(11), Neskaya (4) and ten others, under CC BY-SA 3.0, CC BY-SA 4.0, CC0 and
+public domain.
 
 ## Settings and developer mode
 

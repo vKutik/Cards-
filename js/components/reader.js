@@ -31,7 +31,7 @@ export function initReader(container, passage, dict, onLook){
       // translation is on the word object but left out of the tooltip for now
       showTooltip(el, {
         title: `${word.word} /${word.ipa}/`,
-        say: word.word,
+        say: { id: word.id, word: word.word },
         hint: word.definition
       });
       if(!looked.has(word.id)){ looked.add(word.id); onLook && onLook(word); }

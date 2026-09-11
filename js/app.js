@@ -9,7 +9,8 @@ import * as srs from './srs.js';
 import * as settings from './settings.js';
 import { progressRing, familiarityDots } from './components/progress.js';
 import { renderFlashcard, withMarks } from './components/flashcard.js';
-import { speak } from './components/audio.js';
+import { say } from './components/audio.js';
+import { pronunciations } from './data/pronunciation.js';
 import { renderReview } from './components/review.js';
 import { initReader, dictOf } from './components/reader.js';
 import { runQuiz, questionFor, anyQuestion } from './components/quiz.js';
@@ -307,7 +308,7 @@ routes.list = () => {
         <b>${w.word}</b>
         ${familiarityDots(srs.familiarity(w.id, textsRead(w.id)))}
         <span class="ipos">/${w.ipa}/ · ${w.pos}</span>
-        <button class="say tiny" data-say="${w.word}">🔊</button>
+        <button class="say tiny" data-say="${w.id}">🔊</button>
       </div>
       <div class="idef">${w.definition}</div>
       <div class="ex">${withMarks(w.examples[0])}</div>
@@ -316,7 +317,8 @@ routes.list = () => {
     : '<div class="card muted">Nothing here yet. Open your first lesson to start.</div>';
 
   screen().innerHTML = `<h1>Word list</h1>${body}${backButton('Back','home')}`;
-  screen().querySelectorAll('[data-say]').forEach(b => b.onclick = () => speak(b.dataset.say));
+  screen().querySelectorAll('[data-say]').forEach(b =>
+    b.onclick = () => { const w = wordById(+b.dataset.say); say(w.id, w.word); });
   wireBack();
 };
 
@@ -331,6 +333,7 @@ routes.settings = ({ confirming = false, note = '' } = {}) => {
       <h2 id="tap" style="cursor:default">Vocabulary trainer</h2>
       <p class="muted">Saving to: ${store.storageLabel()}</p>
     </div>
+    ${creditsCard()}
     ${settings.isDevMode() ? devCard(confirming, note) : ''}
     ${backButton('Back','home')}`;
 
@@ -347,6 +350,28 @@ routes.settings = ({ confirming = false, note = '' } = {}) => {
 
   wireBack();
 };
+
+/* The recordings are other people's work under licences that ask for a
+   credit, so the credit is in the app, not only in the README. */
+function creditsCard(){
+  const by = {};
+  for(const id in pronunciations){
+    const p = pronunciations[id];
+    (by[p.by] = by[p.by] || { n:0, lic:new Set() }).n++;
+    by[p.by].lic.add(p.lic);
+  }
+  const voices = Object.entries(by).sort((a,b) => b[1].n - a[1].n)
+    .map(([name, v]) => `<div class="row"><span>${name || 'uncredited'}</span>
+        <b>${v.n}</b></div>`).join('');
+  const licences = [...new Set(Object.values(pronunciations).map(p => p.lic))].join(', ');
+  return `<div class="card">
+    <h2>Pronunciations</h2>
+    <p class="muted">Spoken by volunteers and published on
+      <a href="https://en.wiktionary.org" target="_blank" rel="noopener">Wiktionary</a>
+      and Wikimedia Commons, under ${licences}. Words recorded, by speaker:</p>
+    ${voices}
+  </div>`;
+}
 
 function devCard(confirming, note){
   return `
