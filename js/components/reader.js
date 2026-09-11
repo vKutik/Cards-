@@ -11,14 +11,11 @@ import { showTooltip, hideTooltip } from './tooltip.js';
  * @param {HTMLElement} container element to render into
  * @param {{text:string, source?:string}} passage
  * @param {Map<string,object>} dict headword -> word object
- * @param {(word:object)=>void} [onLook] called the first time a word is tapped
  */
-export function initReader(container, passage, dict, onLook){
+export function initReader(container, passage, dict){
   container.innerHTML =
     `<div class="story">${passage.text}</div>` +
     (passage.source ? `<div class="source">${passage.source}</div>` : '');
-
-  const looked = new Set();
 
   container.querySelectorAll('mark').forEach(el => {
     el.setAttribute('role','button');
@@ -34,7 +31,6 @@ export function initReader(container, passage, dict, onLook){
         say: { id: word.id, word: word.word },
         hint: word.definition
       });
-      if(!looked.has(word.id)){ looked.add(word.id); onLook && onLook(word); }
     };
 
     el.addEventListener('click', open);

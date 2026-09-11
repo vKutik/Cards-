@@ -8,7 +8,7 @@
  */
 
 /** Someone who has asked their system for less movement gets none. */
-export const calm = () =>
+const calm = () =>
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** Restart the enter animation on an element that was just repainted. */

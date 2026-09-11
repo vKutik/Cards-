@@ -3,12 +3,13 @@
  * anything themselves (storage.js) and never schedule anything (srs.js).
  */
 import { words, lessons, passages, wordById, lessonWords, openPassages,
-         shelfOf, DAILY_NEW_LIMIT } from './data.js';
+         shelfOf } from './data.js';
 import * as store from './storage.js';
 import * as srs from './srs.js';
 import * as settings from './settings.js';
 import { progressRing, familiarityDots } from './components/progress.js';
-import { renderFlashcard, withMarks } from './components/flashcard.js';
+import { renderFlashcard } from './components/flashcard.js';
+import { markedOf } from './components/word.js';
 import { say } from './components/audio.js';
 import { pronunciations } from './data/pronunciation.js';
 import { renderReview } from './components/review.js';
@@ -16,6 +17,7 @@ import { initReader, dictOf } from './components/reader.js';
 import { runQuiz, questionFor, anyQuestion } from './components/quiz.js';
 import { hideTooltip } from './components/tooltip.js';
 import { paint, easeIn } from './components/motion.js';
+import { shuffle, one } from './util.js';
 
 const screen = () => document.getElementById('screen');
 const DICT = dictOf(words);
@@ -24,7 +26,9 @@ const DICT = dictOf(words);
 const routes = {};
 let current = { name:'home', params:{} };
 
-export function go(name, params = {}){
+/* The one way a screen changes. Nothing outside this file calls it -
+   app.js is the entry point, not a library. */
+function go(name, params = {}){
   hideTooltip();
   current = { name, params };
   paint(screen(), () => routes[name](params), () => window.scrollTo(0,0));
@@ -37,10 +41,20 @@ const backButton = (label = 'Back', to = 'home') =>
 const wireBack = () => screen().querySelectorAll('[data-back]')
   .forEach(b => b.onclick = () => go(b.dataset.back));
 
+/** Both quizzes finish the same way: the score, a line about it, then a way
+ *  back into the text. Only the wording and those buttons differ, so the
+ *  caller passes them and wires their clicks afterwards. */
+function scoreScreen(score, total, note, buttons, backLabel = 'Back'){
+  screen().innerHTML = `<h1>${score} of ${total}</h1>
+    <div class="card muted"><p>${note}</p></div>
+    ${buttons}${backButton(backLabel,'home')}`;
+  easeIn(screen());
+  wireBack();
+}
+
 /* ---------------- home ---------------- */
 routes.home = () => {
   const dueIds   = srs.due();
-  const newIds   = srs.nextNewWords();
   const wait     = srs.unlockIn();
   const openIds  = srs.introducedIds();
   const reading  = openPassages(openIds);
@@ -63,7 +77,7 @@ routes.home = () => {
     <button class="linkbtn" id="settings">Settings</button>`;
 
   const on = (id, fn) => { const el = screen().querySelector('#'+id); if(el) el.onclick = fn; };
-  on('review',   () => go('review',  { queue: shuffle(dueIds), i:0, revealed:false, right:0 }));
+  on('review',   () => go('review',  { queue: shuffle(dueIds), i:0, revealed:false }));
   on('lesson',   () => lesson && go('lesson', { id: lesson.id, stage: resumeStage(lesson) }));
   on('reading',  () => go('reading'));
   on('list',     () => go('list'));
@@ -93,7 +107,7 @@ routes.lesson = ({ id, stage = 0, i = 0 }) => {
   const ws = lessonWords(lesson);
 
   if(stage === 0) return lessonCards(lesson, ws, i);
-  if(stage === 1) return lessonReading(lesson, ws);
+  if(stage === 1) return lessonReading(lesson);
   return lessonQuiz(lesson, ws);
 };
 
@@ -103,7 +117,7 @@ function lessonCards(lesson, ws, i){
   screen().innerHTML = head + '<div id="stage"></div>';
 
   renderFlashcard(screen().querySelector('#stage'), word,
-    { index:i, total:ws.length, label:`New word ${i+1} of ${ws.length}`,
+    { label:`New word ${i+1} of ${ws.length}`,
       fam: srs.familiarity(word.id, textsRead(word.id)),
       next: i === ws.length-1 ? 'Read the story' : 'Got it' },
     {
@@ -117,7 +131,7 @@ function lessonCards(lesson, ws, i){
     });
 }
 
-function lessonReading(lesson, ws){
+function lessonReading(lesson){
   screen().innerHTML = `<h1>${lesson.title}</h1>` + `
     <p class="muted">All five of today's words are in this text. Tap any highlighted
       word if you need its meaning.</p>
@@ -138,7 +152,7 @@ function lessonQuiz(lesson, ws){
   // mechanics on a word from today - which one is left to the draw
   const questions = [
     ...lesson.quiz,
-    anyQuestion(ws[Math.floor(Math.random()*ws.length)], words)
+    anyQuestion(one(ws), words)
   ];
   screen().innerHTML = `<h1>${lesson.title}</h1><div id="stage"></div>`;
 
@@ -146,15 +160,12 @@ function lessonQuiz(lesson, ws){
     onAnswer: (q, ok) => { if(ok && q.wordId != null) store.markReadCorrect(q.wordId); },
     onDone: async (score, total) => {
       await store.setLessonStage(lesson.id,'done');
-      screen().innerHTML = `<h1>${score} of ${total}</h1>
-        <div class="card muted"><p>${score === total
+      scoreScreen(score, total,
+        score === total
           ? 'The text carried every answer. That is how words are learned outside a card.'
-          : 'Read the story once more and look at the sentence around each word.'}</p></div>
-        <button class="go" id="again">Read it again</button>
-        ${backButton('Done','home')}`;
-      easeIn(screen());
+          : 'Read the story once more and look at the sentence around each word.',
+        `<button class="go" id="again">Read it again</button>`, 'Done');
       screen().querySelector('#again').onclick = () => go('lesson',{ id:lesson.id, stage:1 });
-      wireBack();
     }
   });
 }
@@ -206,13 +217,14 @@ routes.reading = ({ id = null, ahead = false } = {}) => {
   if(!passage) return go('home');
 
   const word = wordById(passage.w);
-  const step = (store.readingPlan(passage.w) || { step:0 }).step;
   const late = srs.overdueBy(passage.w);
 
   screen().innerHTML = `<h1>Reading practice</h1>
     <p class="muted"><b>${word.word}</b> · text ${textsRead(passage.w) + 1} of
-      ${shelfOf(passage.w).length}${late > 1 ? ` · ${late} days overdue` : ''}
-      ${due.length > 1 ? ` · ${due.length - 1} more waiting` : ''}</p>
+      ${shelf(passage.w).length}${late > 1 ? ` · ${late} days overdue` : ''}
+      ${due.length > 1 ? ` · ${due.length - 1} more waiting` : ''}
+      <button class="murky" id="murky" title="This text does not make the word clear"
+        aria-label="This text does not make the word clear">?</button></p>
     <div class="card" id="stage"></div>
     <button class="go" id="quiz">Answer the question</button>
     <button class="go ghost" id="another">Another word</button>
@@ -221,6 +233,11 @@ routes.reading = ({ id = null, ahead = false } = {}) => {
   initReader(screen().querySelector('#stage'), passage, DICT);
   screen().querySelector('#quiz').onclick = () => go('readingQuiz', { id: passage.id });
   screen().querySelector('#another').onclick = () => go('reading', { ahead });
+  screen().querySelector('#murky').onclick = async () => {
+    // a rule cannot tell a figurative use from a plain one; this can
+    await store.markMurky(passage.id);
+    go('reading', { ahead });
+  };
   wireBack();
 };
 
@@ -244,17 +261,23 @@ function readingRested(){
   wireBack();
 }
 
-const textsRead = wordId => shelfOf(wordId).filter(p => store.isPassageRead(p.id)).length;
+/* A word's shelf minus the texts the learner retired with the "?" button.
+   Both the counter in the header and the draw below work off this, so a
+   retired text stops being counted as well as stops coming round. */
+const shelf = wordId => shelfOf(wordId).filter(p => !store.isMurky(p.id));
+
+const textsRead = wordId => shelf(wordId).filter(p => store.isPassageRead(p.id)).length;
 
 /** One of the word's ten, drawn at random from those not yet read. */
 let lastPassage = null;
 function pickText(wordId){
   if(wordId == null) return null;
-  const shelf = shelfOf(wordId);
-  let pool = shelf.filter(p => !store.isPassageRead(p.id));
-  if(!pool.length) pool = shelf;                       // all ten read: revisit
+  const left = shelf(wordId);
+  if(!left.length) return shelfOf(wordId)[0] || null;  // every one retired
+  let pool = left.filter(p => !store.isPassageRead(p.id));
+  if(!pool.length) pool = left;                        // all read: revisit
   if(pool.length > 1) pool = pool.filter(p => p.id !== lastPassage);
-  const chosen = pool[Math.floor(Math.random()*pool.length)];
+  const chosen = one(pool);
   lastPassage = chosen ? chosen.id : null;
   return chosen || null;
 }
@@ -280,17 +303,14 @@ routes.readingQuiz = ({ id }) => {
       await store.markPassageRead(passage.id);
       // right: the next text for this word moves further out. wrong: tomorrow.
       await srs.gradeReading(passage.w, score === total);
-      screen().innerHTML = `<h1>${score} of ${total}</h1>
-        <div class="card muted"><p>${score === total
+      scoreScreen(score, total,
+        score === total
           ? 'You read the meaning out of the sentences around it. That is how words are actually learned.'
-          : 'Read it once more and look at what happens either side of the word.'}</p></div>
-        <button class="go" id="another">Next word</button>
-        <button class="go ghost" id="again">Read it again</button>
-        ${backButton('Back','home')}`;
-      easeIn(screen());
+          : 'Read it once more and look at what happens either side of the word.',
+        `<button class="go" id="another">Next word</button>
+         <button class="go ghost" id="again">Read it again</button>`);
       screen().querySelector('#another').onclick = () => go('reading');
       screen().querySelector('#again').onclick = () => go('reading',{ id: passage.id });
-      wireBack();
     }
   });
 };
@@ -311,7 +331,7 @@ routes.list = () => {
         <button class="say tiny" data-say="${w.id}">🔊</button>
       </div>
       <div class="idef">${w.definition}</div>
-      <div class="ex">${withMarks(w.examples[0])}</div>
+      <div class="ex">${markedOf(w.examples[0])}</div>
       ${w.opposite !== '—' ? `<div class="anto">opposite: ${w.opposite}</div>` : ''}
     </div>`).join('')
     : '<div class="card muted">Nothing here yet. Open your first lesson to start.</div>';
@@ -330,7 +350,7 @@ routes.list = () => {
 routes.settings = ({ confirming = false, note = '' } = {}) => {
   screen().innerHTML = `<h1>Settings</h1>
     <div class="card">
-      <h2 id="tap" style="cursor:default">Vocabulary trainer</h2>
+      <h2 id="tap" class="tapzone">Vocabulary trainer</h2>
       <p class="muted">Saving to: ${store.storageLabel()}</p>
     </div>
     ${creditsCard()}
@@ -386,15 +406,6 @@ function devCard(confirming, note){
            <button class="go ghost" id="devNo">Cancel</button>`
         : `<button class="go danger" id="devDelete">Delete all progress</button>`}
     </div>`;
-}
-
-/* ---------------- helpers ---------------- */
-function shuffle(a){
-  const x = a.slice();
-  for(let i = x.length-1; i > 0; i--){
-    const j = Math.floor(Math.random()*(i+1)); [x[i],x[j]] = [x[j],x[i]];
-  }
-  return x;
 }
 
 /* ---------------- boot ---------------- */

@@ -12,7 +12,7 @@ try { state = { ...defaults(), ...JSON.parse(localStorage.getItem(KEY) || '{}') 
 function persist(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
 
 export const isDevMode = () => state.devMode;
-export function setDevMode(v){ state.devMode = !!v; persist(); }
+function setDevMode(v){ state.devMode = !!v; persist(); }
 
 /* Developer mode is not a button anyone taps by accident: it unlocks the
  * same way Android's build-number trick does - five taps on one label,

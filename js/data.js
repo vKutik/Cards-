@@ -20,16 +20,10 @@ export const wordById = id => words[id];
 /** Resolve a lesson's wordIds into full word objects (DRY: stored once). */
 export const lessonWords = lesson => lesson.wordIds.map(wordById);
 
-/** The lesson a word belongs to, or undefined. */
-export const lessonOfWord = id => lessons.find(l => l.wordIds.includes(id));
-
-/** How many passages every word carries. One is drawn each time the word
- *  comes round on its reading interval - see srs.READ_STEPS. */
-export const SHELF_SIZE = 10;
-
-/* Every word owns a shelf of SHELF_SIZE passages, ordered by `slot`. A
-   passage belongs to exactly one word, so "ten texts for this word" is
-   literally true and the rounds have something to count through. */
+/* Every word owns a shelf of ten passages, ordered by `slot`. A passage
+   belongs to exactly one word, so "ten texts for this word" is literally
+   true and the rounds have something to count through. One is drawn each
+   time the word comes round on its reading interval - see srs.READ_STEPS. */
 const SHELVES = passages.reduce((acc, p) => {
   (acc[p.w] = acc[p.w] || [])[p.slot] = p;
   return acc;

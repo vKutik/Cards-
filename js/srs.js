@@ -2,15 +2,21 @@
  * snapshot and writes back through storage.js, so the same logic can move to
  * a Python service untouched.
  */
-import { words, DAILY_NEW_LIMIT } from './data.js';
+import { DAILY_NEW_LIMIT } from './data.js';
 import * as store from './storage.js';
 
 /** Review intervals in days. The spacing is the part that does the work. */
-export const STEPS = [1, 3, 7, 16, 35, 90];
+const STEPS = [1, 3, 7, 16, 35, 90];
 const DAY = 864e5;
 
-export const today = () => new Date().toISOString().slice(0,10);
+const today = () => new Date().toISOString().slice(0,10);
 const daysBetween = (a,b) => Math.round((new Date(b) - new Date(a)) / DAY);
+
+/** A date n days from today, as the YYYY-MM-DD both schedules store. */
+const addDays = n => {
+  const d = new Date(); d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
+};
 
 /* ---------- the four steps a word moves through ----------
  *   new     never opened                       grey
@@ -65,16 +71,11 @@ export function hhmm(ms){
   return h ? `${h}h ${m%60}m` : `${m}m`;
 }
 
-/** The next words that may be opened right now, in list order. */
-export const nextNewWords = () =>
-  words.map(w => w.id).filter(id => !store.getWord(id)).slice(0, newQuota());
-
 /* ---------- transitions ---------- */
 export function introduce(id){
   const s = store.getWord(id) || { box:0, right:0, wrong:0, seen:0 };
   if(!s.new) s.new = Date.now();
-  const d = new Date(); d.setDate(d.getDate() + STEPS[0]);
-  s.next = d.toISOString().slice(0,10);
+  s.next = addDays(STEPS[0]);
   s.lastSeen = today();
   // the lesson was the first meeting; the first text is offered straight away,
   // and only then do the intervals start growing
@@ -88,8 +89,7 @@ export function grade(id, g){
   s.seen++;
   if(g === 0){ s.wrong++; s.box = 0; }                 // forgot: back to day one
   else { s.right++; s.box = Math.min(STEPS.length-1, s.box + (g === 1 ? 0 : g === 2 ? 1 : 2)); }
-  const d = new Date(); d.setDate(d.getDate() + STEPS[s.box]);
-  s.next = d.toISOString().slice(0,10);
+  s.next = addDays(STEPS[s.box]);
   s.lastSeen = today();
   store.logAnswer(g > 0);
   return store.putWord(id, s);
@@ -103,12 +103,7 @@ export function grade(id, g){
  * Miss it and the word drops to the start of the ladder, which is what makes
  * the schedule honest rather than decorative.
  */
-export const READ_STEPS = [1, 3, 7, 16, 35, 90, 180];
-
-const addDays = n => {
-  const d = new Date(); d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0,10);
-};
+const READ_STEPS = [1, 3, 7, 16, 35, 90, 180];
 
 /** Words whose next text is due today or overdue, most overdue first. */
 export function readingDue(){

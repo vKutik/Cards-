@@ -22,6 +22,11 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .say{background:#fff;border:1px solid var(--line);color:var(--green-d);
   padding:8px 14px;font-size:.88rem;font-weight:520;margin-bottom:14px}
 .say.tiny{margin:0 0 0 auto;padding:3px 9px;font-size:.8rem}
+.say.alt{margin:10px 0 0}
+
+/* a label that is tapped rather than read - the five-tap developer unlock.
+   No I-beam, and no word getting selected when the taps come in fast. */
+.tapzone{cursor:default;-webkit-user-select:none;user-select:none}
 
 /* ---------- card ---------- */
 .card{background:var(--card);border:1px solid var(--line);border-radius:5px;
@@ -93,6 +98,13 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .fb{padding:10px 12px;border-radius:4px;margin-bottom:12px;font-size:.95rem}
 .fb.ok{background:var(--wash-green);border-left:3px solid var(--green)}
 .fb.no{background:var(--wash-red);border-left:3px solid var(--red)}
+
+/* the quiet "?" beside a reading text: this one did not make its word clear.
+   Small, unlabelled and out of the way - it is an escape hatch, not a task. */
+.murky{background:none;border:1px solid var(--line);border-radius:50%;
+  width:18px;height:18px;line-height:1;padding:0;margin-left:8px;
+  color:var(--soft);font-size:.72rem;font-weight:600;vertical-align:middle}
+.murky:hover{border-color:var(--amber);color:var(--amber)}
 
 /* ---------- progress ---------- */
 

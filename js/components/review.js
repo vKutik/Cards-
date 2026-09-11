@@ -1,12 +1,8 @@
 /* review.js - the spaced-repetition screen. Recall first, reveal second,
  * then say how hard it was; srs.js turns that into the next due date. */
-import { familiarityDots } from './progress.js';
-import { exampleOf, exampleNo, nextExample, withMarks } from './flashcard.js';
-import { say } from './audio.js';
+import { wordFace, wireWordFace, exampleOf, blankOf } from './word.js';
 import * as srs from '../srs.js';
 import * as store from '../storage.js';
-
-const clozeOf = s => s.replace(/\{.+?\}/, '<u> </u>');
 
 const GRADES = [
   { g:0, label:'Forgot', note:'again today',      cls:'g0' },
@@ -18,7 +14,7 @@ const GRADES = [
 /**
  * @param {HTMLElement} container
  * @param {object} word
- * @param {{index:number,total:number,revealed:boolean}} pos
+ * @param {{index:number,total:number,revealed:boolean,fam?:object}} pos
  * @param {{onReveal:Function, onGrade:(g:number)=>void, onRerender:Function}} handlers
  */
 export function renderReview(container, word, pos, handlers){
@@ -34,7 +30,7 @@ export function renderReview(container, word, pos, handlers){
       </div>
       <div class="card">
         ${askCloze
-          ? `<p class="muted">Which word is missing?</p><div class="cloze">${clozeOf(exampleOf(word))}</div>`
+          ? `<p class="muted">Which word is missing?</p><div class="cloze">${blankOf(exampleOf(word))}</div>`
           : `<p class="muted">What does this word mean?</p>
              <div class="word">${word.word}</div><div class="pos">/${word.ipa}/ · ${word.pos}</div>`}
         <p class="muted">Recall it yourself, out loud, and only then reveal it.</p>
@@ -46,23 +42,15 @@ export function renderReview(container, word, pos, handlers){
 
   container.innerHTML = `
     <div class="card">
-      <div class="word">${word.word}${pos.fam ? familiarityDots(pos.fam) : ''}</div>
-      <div class="pos">/${word.ipa}/ · ${word.pos}</div>
-      <button class="say" data-say="${word.id}">🔊 listen</button>
-      <!-- translation hidden in the UI for now, see flashcard.js -->
-      <div class="def">${word.definition}</div>
-      <div class="ex">${withMarks(exampleOf(word))}</div>
-      ${word.opposite !== '—' ? `<div class="anto">opposite: ${word.opposite}</div>` : ''}
-      <div class="exnav">example ${exampleNo(word)} of ${word.examples.length}</div>
-      <button class="say alt" id="alt" style="margin:10px 0 0">Show another example</button>
+      ${wordFace(word, pos.fam)}
+      <button class="say alt" data-alt>Show another example</button>
     </div>
     <p class="muted">How easily did it come back?</p>
     <div class="grade">
       ${GRADES.map(x => `<button class="${x.cls}" data-g="${x.g}">${x.label}<small>${x.note}</small></button>`).join('')}
     </div>`;
 
-  container.querySelector('[data-say]').onclick = () => say(word.id, word.word);
-  container.querySelector('#alt').onclick = async () => { await nextExample(word); handlers.onRerender(); };
+  wireWordFace(container, word, handlers.onRerender);
   container.querySelectorAll('[data-g]').forEach(b =>
     b.onclick = () => handlers.onGrade(+b.dataset.g));
 }

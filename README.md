@@ -31,7 +31,8 @@ js/
   data.js                  the data contract (re-exports + helpers)
   storage.js               the only module that persists progress
   srs.js                   scheduling rules, no DOM
-  settings.js               app preferences and the developer-mode unlock
+  settings.js              app preferences and the developer-mode unlock
+  util.js                  shuffle and draw-one, the two array helpers shared
   data/
     words.js               100 words: ipa, translation, definition, examples
     lessons.js             20 lessons: 5 wordIds, a marked-up text, a quiz
@@ -39,6 +40,7 @@ js/
     pronunciation.js       the recording, speaker and licence per word
   components/
     progress.js            the round gauge and its legend
+    word.js                the {braces} marker, and the face of a word
     flashcard.js           stage 1 card
     reader.js              stage 2: paints a passage, hangs tooltips
     tooltip.js             one tooltip at a time, positioned and flipped
@@ -57,7 +59,11 @@ js/
   Everything comes from `js/data/`.
 - **One way to save.** Every change to progress goes through `storage.js`.
   Nothing else touches `localStorage`.
-- **DRY.** A lesson stores `wordIds`, not copies of the words.
+- **DRY.** A lesson stores `wordIds`, not copies of the words; the `{braces}`
+  marker is read in one module (`word.js`), the card face that stage 1 and the
+  review reveal share is written once there too, and every export in `js/` is
+  imported by something — the three `fetch*` seams in `data.js` excepted, which
+  exist for the backend move below.
 
 ## Learning flow
 
@@ -111,6 +117,13 @@ Answer from the text and the word moves up a rung. Miss it and it drops to
 the bottom — back tomorrow — which is what keeps the schedule honest. The
 first text is offered the moment a word is introduced, since the lesson was
 the meeting and the texts are the repetitions.
+
+A small **?** sits beside the word in the header. Tapping it says *this text
+does not make the word clear* — the passage is retired, another of that word's
+ten comes up at once, and the shelf count drops with it. The schedule is not
+touched: flagging a text is not failing it. This is the escape hatch for the
+roughly one text in ten that the sense filters let through (see below); the
+filters are rules, and rules cannot read.
 
 When nothing is due the screen says so and names the day the next word comes
 round, with a *Read ahead anyway* button for when you want more than the

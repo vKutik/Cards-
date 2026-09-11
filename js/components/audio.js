@@ -13,7 +13,7 @@ const clips = new Map();
 let playing = null;
 
 /** The robot fallback, and what the very first release used everywhere. */
-export const speak = text => {
+const speak = text => {
   try {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'en-US'; u.rate = .85;
@@ -21,7 +21,7 @@ export const speak = text => {
   } catch(e){}
 };
 
-export function stopAudio(){
+function stopAudio(){
   if(playing){ playing.pause(); playing.currentTime = 0; playing = null; }
   try { speechSynthesis.cancel(); } catch(e){}
 }
@@ -49,6 +49,3 @@ export function say(wordId, text){
   const started = clip.play();
   if(started && started.catch) started.catch(() => { playing = null; speak(text); });
 }
-
-/** Who recorded a word and under what licence, for the credit line. */
-export const creditFor = wordId => pronunciations[wordId] || null;

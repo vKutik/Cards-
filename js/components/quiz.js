@@ -13,24 +13,10 @@
  * amber and says what the word actually means.
  */
 import { easeIn } from './motion.js';
-
-/* ---------- reading the {target} marker inside an example ---------- */
-const MARKER = /\{(.+?)\}/;
-const surfaceOf = ex => (ex.match(MARKER) || [, ''])[1];
-const blankOf   = ex => ex.replace(MARKER, '<u> </u>');
-const markedOf  = ex => ex.replace(MARKER, '<mark>$1</mark>');
+import { surfaceOf, blankOf, markedOf } from './word.js';
+import { shuffle, one } from '../util.js';
 
 /* ---------- small helpers ---------- */
-const shuffle = a => {
-  const c = a.slice();
-  for(let i = c.length-1; i > 0; i--){
-    const j = Math.floor(Math.random()*(i+1)); [c[i],c[j]] = [c[j],c[i]];
-  }
-  return c;
-};
-const pick = (a, n) => shuffle(a).slice(0, n);
-const one  = a => a[Math.floor(Math.random()*a.length)];
-
 const matchCase = (text, model) => !text ? text
   : /^[A-Z]/.test(model) ? text[0].toUpperCase() + text.slice(1)
                          : text[0].toLowerCase() + text.slice(1);
@@ -97,7 +83,7 @@ const sameClass = (word, allWords) =>
 /* ---------- 1. Context gap fill ---------- */
 /** A sentence with the word cut out of it; the pills are all in the same
  *  grammatical form so only the context tells you which one belongs. */
-export function gapQuestion(word, allWords){
+function gapQuestion(word, allWords){
   const example = one(word.examples);
   const answer  = surfaceOf(example);
   const shape   = shapeOf(answer, word.word);
@@ -126,7 +112,7 @@ export function gapQuestion(word, allWords){
 /** The word, then two sentences: its own, and one belonging to another word
  *  of the same class with this word transplanted into it. The transplant
  *  reads grammatically and means the wrong thing - which is the point. */
-export function matchQuestion(word, allWords){
+function matchQuestion(word, allWords){
   const good = one(word.examples);
 
   const donors = sameClass(word, allWords).filter(w => w.word !== word.opposite);
@@ -135,7 +121,7 @@ export function matchQuestion(word, allWords){
   const donorSurface = surfaceOf(donorExample);
   const transplant = matchCase(
     surfaceLike(word, shapeOf(donorSurface, donor.word)), donorSurface);
-  const wrong = donorExample.replace(MARKER, `<mark>${transplant}</mark>`);
+  const wrong = markedOf(donorExample, transplant);
 
   return {
     kind: 'match',
@@ -151,7 +137,7 @@ export function matchQuestion(word, allWords){
 /* ---------- 3. Intuitive focus ---------- */
 /** One sentence, one claimed meaning, three seconds. Half the time the claim
  *  is the word's real meaning, half the time it belongs to another word. */
-export function focusQuestion(word, allWords){
+function focusQuestion(word, allWords){
   const example  = one(word.examples);
   const truthful = Math.random() < 0.5;
   const other    = one(sameClass(word, allWords));
