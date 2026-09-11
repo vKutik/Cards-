@@ -12,11 +12,12 @@
  *   lesson: { [lessonId]: 'reading' | 'quiz' | 'done' }
  *   rsched: { [wordId]: { step, next } }  when this word is next due a text
  *   murky:  { [passageId]: 1 }  texts the learner flagged as unclear
+ *   grants: [ timestamp ]  each +5 words tap, one extra batch apiece
  */
 const KEY = 'vocab-progress';
 
 const empty = () => ({ words:{}, ex:{}, rw:{}, read:{}, lesson:{}, rsched:{},
-                       murky:{}, log:{}, streak:0, last:null });
+                       murky:{}, log:{}, grants:[], streak:0, last:null });
 
 let state = empty();
 
@@ -55,6 +56,7 @@ export async function load(){
   const raw = await Backend.read();
   if(raw){ try { state = { ...empty(), ...JSON.parse(raw) }; } catch(e){} }
   for(const k of ['words','ex','rw','read','lesson','rsched','murky','log']) if(!state[k]) state[k] = {};
+  if(!Array.isArray(state.grants)) state.grants = [];   // progress saved before grants existed
   // progress saved before the daily cap existed has no `new` stamp
   for(const id of Object.keys(state.words)){
     const s = state.words[id];
@@ -91,6 +93,14 @@ export const lessonStage = lessonId => state.lesson[lessonId] || null;
    a different one of the word's ten comes up instead. */
 export function markMurky(passageId){ state.murky[passageId] = 1; return save(); }
 export const isMurky = pid => !!state.murky[pid];
+
+/* ---------- extra new words the learner asked for ----------
+   The five-a-day cap is the pace the review intervals are built around, so
+   it is never raised permanently. A grant is one timestamp worth one extra
+   batch, and it ages out of the rolling 24 hours exactly like an opened
+   word does - so tomorrow starts at five again, by itself. */
+export function grantNewWords(){ state.grants.push(Date.now()); return save(); }
+export const grantsSince = t => state.grants.filter(x => x > t).length;
 
 /* ---------- when each word is next due a reading ---------- */
 export const readingPlan = wordId => state.rsched[wordId] || null;

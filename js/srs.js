@@ -57,13 +57,20 @@ const startTimes = () => {
     .sort((a,b) => a-b);
 };
 
-export const newQuota = () => Math.max(0, DAILY_NEW_LIMIT - startTimes().length);
+/** The cap as it stands this minute: five, plus any batch asked for inside
+ *  the last 24 hours. Both halves age out of the same rolling window. */
+const capNow = () => DAILY_NEW_LIMIT + store.grantsSince(Date.now() - DAY) * DAILY_NEW_LIMIT;
+
+export const newQuota = () => Math.max(0, capNow() - startTimes().length);
+
+/** Open one more batch of five right now, without moving the cap itself. */
+export const grantMore = () => store.grantNewWords();
 
 /** Milliseconds until the cap frees up again, 0 if it already has. */
 export function unlockIn(){
-  const r = startTimes();
-  if(r.length < DAILY_NEW_LIMIT) return 0;
-  return Math.max(0, r[r.length - DAILY_NEW_LIMIT] + DAY - Date.now());
+  const r = startTimes(), cap = capNow();
+  if(r.length < cap) return 0;
+  return Math.max(0, r[r.length - cap] + DAY - Date.now());
 }
 
 export function hhmm(ms){

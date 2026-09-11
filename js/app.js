@@ -392,16 +392,23 @@ routes.list = () => {
  * a secret either: the title says so. */
 routes.settings = ({ confirming = false, note = '' } = {}) => {
   screen().innerHTML = `<h1>Settings</h1>
+    ${note ? `<div class="fb ok">${note}</div>` : ''}
     <div class="card">
       <h2 id="tap" class="tapzone">Vocabulary trainer</h2>
       <p class="muted">Saving to: ${store.storageLabel()}</p>
     </div>
+    ${newWordsCard()}
     ${creditsCard()}
-    ${settings.isDevMode() ? devCard(confirming, note) : ''}
+    ${settings.isDevMode() ? devCard(confirming) : ''}
     ${backButton('Back','home')}`;
 
   screen().querySelector('#tap').onclick = () => {
     if(settings.registerUnlockTap()) go('settings', { note:'Developer mode unlocked.' });
+  };
+
+  screen().querySelector('#plus5').onclick = async () => {
+    await srs.grantMore();
+    go('settings', { note:`Five more words opened. ${srs.newQuota()} waiting on the home screen.` });
   };
 
   const del = screen().querySelector('#devDelete');
@@ -413,6 +420,25 @@ routes.settings = ({ confirming = false, note = '' } = {}) => {
 
   wireBack();
 };
+
+/* Five a day is not a limit imposed on the learner - it is the number the
+   review intervals assume, and going faster than it is what buries people in
+   reviews a week later. So the button opens one more batch rather than
+   raising the cap: the extra ages out on its own and tomorrow starts at five
+   again, with no setting left switched on to forget about. */
+function newWordsCard(){
+  const quota = srs.newQuota();
+  const wait  = srs.unlockIn();
+  return `<div class="card">
+    <h2>New words</h2>
+    <p class="muted">Five new words per 24 hours is the pace the spacing is
+      built around. This opens five more right now without changing that —
+      the extra batch ages out after a day, and tomorrow starts at five again.</p>
+    <div class="row"><span>Ready to open now</span><b>${quota}</b></div>
+    ${!quota && wait ? `<div class="row"><span>Next five in</span><b>${srs.hhmm(wait)}</b></div>` : ''}
+    <button class="go ghost" id="plus5">+5 words now</button>
+  </div>`;
+}
 
 /* The recordings are other people's work under licences that ask for a
    credit, so the credit is in the app, not only in the README. */
@@ -436,11 +462,10 @@ function creditsCard(){
   </div>`;
 }
 
-function devCard(confirming, note){
+function devCard(confirming){
   return `
     <div class="card">
       <h2>Developer</h2>
-      ${note ? `<div class="fb ok">${note}</div>` : ''}
       <p class="muted">Not part of the normal flow. Deletes every word, lesson and log
         on this device - there is no undo.</p>
       ${confirming

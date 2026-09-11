@@ -67,7 +67,11 @@ js/
 
 ## Learning flow
 
-1. **Daily limit** — 5 new words per rolling 24 hours.
+1. **Daily limit** — 5 new words per rolling 24 hours, with a **+5 words now**
+   button in Settings for the days you want to go faster. It opens one more
+   batch rather than raising the cap: the grant is a timestamp that ages out
+   of the same rolling 24 hours an opened word does, so tomorrow starts at
+   five again with no setting left switched on to forget about.
 2. **Stage 1, flashcards** — word, transcription, recording, definition, one
    example. Five cards.
 3. **Stage 2, reading** — a short text weaving in all five words. Tap any
@@ -226,6 +230,13 @@ They are **served from this repository** rather than hot-linked. Wikimedia
 rate-limits bursts — a word list where you tap several words in a row is
 exactly such a burst — and a tap should not wait on a third-party round trip.
 `audio/` is 1.9 MB for all 100 files.
+
+**They are loudness-matched.** Thirteen volunteers recorded these on thirteen
+microphones, and shipped raw the set spanned 15.9 dB — `stubborn` was the 12th
+quietest of the hundred and, at 0.63 s, read on a phone as a button that did
+nothing. Every clip is now normalised to −20 dBFS RMS with peaks held at
+−2.5 dBFS, each re-encoded at its own source bitrate so only the gain changes.
+The spread is 5.9 dB, and no clip is more than twice as quiet as the median.
 
 `js/components/audio.js` plays the recording and only falls back to
 SpeechSynthesis when a file is missing or the browser refuses to play it, so
