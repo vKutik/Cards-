@@ -11,13 +11,12 @@
  *   read  : { [passageId]: 1 }
  *   lesson: { [lessonId]: 'reading' | 'quiz' | 'done' }
  *   rsched: { [wordId]: { step, next } }  when this word is next due a text
- *   murky:  { [passageId]: 1 }  texts the learner flagged as unclear
  *   grants: [ timestamp ]  each +5 words tap, one extra batch apiece
  */
 const KEY = 'vocab-progress';
 
 const empty = () => ({ words:{}, ex:{}, rw:{}, read:{}, lesson:{}, rsched:{},
-                       murky:{}, log:{}, grants:[], streak:0, last:null });
+                       log:{}, grants:[], streak:0, last:null });
 
 let state = empty();
 
@@ -55,7 +54,10 @@ const Backend = {
 export async function load(){
   const raw = await Backend.read();
   if(raw){ try { state = { ...empty(), ...JSON.parse(raw) }; } catch(e){} }
-  for(const k of ['words','ex','rw','read','lesson','rsched','murky','log']) if(!state[k]) state[k] = {};
+  for(const k of ['words','ex','rw','read','lesson','rsched','log']) if(!state[k]) state[k] = {};
+  // texts flagged by the removed "?" button: back on the shelf, and the key
+  // written out of the save rather than left behind as inert cruft
+  if(state.murky){ delete state.murky; await save(); }
   if(!Array.isArray(state.grants)) state.grants = [];   // progress saved before grants existed
   // progress saved before the daily cap existed has no `new` stamp
   for(const id of Object.keys(state.words)){
@@ -85,14 +87,6 @@ export const isPassageRead = pid => !!state.read[pid];
 
 export function setLessonStage(lessonId, stage){ state.lesson[lessonId] = stage; return save(); }
 export const lessonStage = lessonId => state.lesson[lessonId] || null;
-
-/* ---------- texts that did not make their word clear ----------
-   The mined passages are filtered by rule, and rules cannot read; roughly
-   one text in ten still uses its word in a sense the course did not teach.
-   This is the learner telling us which ones, so the passage is retired and
-   a different one of the word's ten comes up instead. */
-export function markMurky(passageId){ state.murky[passageId] = 1; return save(); }
-export const isMurky = pid => !!state.murky[pid];
 
 /* ---------- extra new words the learner asked for ----------
    The five-a-day cap is the pace the review intervals are built around, so

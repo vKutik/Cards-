@@ -122,13 +122,6 @@ the bottom — back tomorrow — which is what keeps the schedule honest. The
 first text is offered the moment a word is introduced, since the lesson was
 the meeting and the texts are the repetitions.
 
-A small **?** sits beside the word in the header. Tapping it says *this text
-does not make the word clear* — the passage is retired, another of that word's
-ten comes up at once, and the shelf count drops with it. The schedule is not
-touched: flagging a text is not failing it. This is the escape hatch for the
-roughly one text in ten that the sense filters let through (see below); the
-filters are rules, and rules cannot read.
-
 ### Reading more is always allowed
 
 The schedule decides what comes back **by itself** — one text per word per

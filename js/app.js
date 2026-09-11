@@ -229,16 +229,14 @@ routes.reading = ({ id = null, word: only = null, after = null, ahead = false } 
 
   const word  = wordById(passage.w);
   const late  = srs.overdueBy(passage.w);
-  const total = shelf(passage.w).length;
+  const total = shelfOf(passage.w).length;
   const done  = textsRead(passage.w);
 
   screen().innerHTML = `<h1>Reading practice</h1>
     <p class="muted"><b>${word.word}</b> · ${done >= total
         ? `all ${total} texts answered`
         : `${done} of ${total} answered`}${late > 1 ? ` · ${late} days overdue` : ''}
-      ${due.length > 1 ? ` · ${due.length - 1} more waiting` : ''}
-      <button class="murky" id="murky" title="This text does not make the word clear"
-        aria-label="This text does not make the word clear">?</button></p>
+      ${due.length > 1 ? ` · ${due.length - 1} more waiting` : ''}</p>
     <div class="card" id="stage"></div>
     <button class="go" id="quiz">Answer the question</button>
     <button class="go ghost" id="more">Another text for <b>${word.word}</b></button>
@@ -250,11 +248,6 @@ routes.reading = ({ id = null, word: only = null, after = null, ahead = false } 
   // more of the same word: the schedule is not consulted and not moved
   screen().querySelector('#more').onclick = () => go('reading', { word: passage.w, ahead });
   screen().querySelector('#another').onclick = () => go('reading', { after: passage.w, ahead });
-  screen().querySelector('#murky').onclick = async () => {
-    // a rule cannot tell a figurative use from a plain one; this can
-    await store.markMurky(passage.id);
-    go('reading', { word: passage.w, ahead });
-  };
   wireBack();
 };
 
@@ -264,7 +257,7 @@ routes.reading = ({ id = null, word: only = null, after = null, ahead = false } 
 function readingRested(){
   const days = srs.nextReadingIn();
   const open = [...srs.introducedIds()];
-  const spare = open.reduce((n, id) => n + shelf(id).length - textsRead(id), 0);
+  const spare = open.reduce((n, id) => n + shelfOf(id).length - textsRead(id), 0);
 
   screen().innerHTML = `<h1>Reading practice</h1>
     <div class="card">
@@ -283,12 +276,8 @@ function readingRested(){
   wireBack();
 }
 
-/* A word's shelf minus the texts the learner retired with the "?" button.
-   Both the counter in the header and the draw below work off this, so a
-   retired text stops being counted as well as stops coming round. */
-const shelf = wordId => shelfOf(wordId).filter(p => !store.isMurky(p.id));
-
-const textsRead = wordId => shelf(wordId).filter(p => store.isPassageRead(p.id)).length;
+/** How many of a word's ten texts have had their question answered. */
+const textsRead = wordId => shelfOf(wordId).filter(p => store.isPassageRead(p.id)).length;
 
 /* Texts already served in this sitting. A text only counts as *read* once
    its question is answered, so "have you read it" cannot order a browse
@@ -300,8 +289,8 @@ const shown = new Set();
 /** One of the word's ten: an unread one it has not just served, at random. */
 function pickText(wordId){
   if(wordId == null) return null;
-  const left = shelf(wordId);
-  if(!left.length) return shelfOf(wordId)[0] || null;   // every one retired
+  const left = shelfOf(wordId);
+  if(!left.length) return null;
 
   // worked all the way through: start the shelf again rather than stall
   if(left.every(p => shown.has(p.id))) left.forEach(p => shown.delete(p.id));

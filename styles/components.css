@@ -99,13 +99,6 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .fb.ok{background:var(--wash-green);border-left:3px solid var(--green)}
 .fb.no{background:var(--wash-red);border-left:3px solid var(--red)}
 
-/* the quiet "?" beside a reading text: this one did not make its word clear.
-   Small, unlabelled and out of the way - it is an escape hatch, not a task. */
-.murky{background:none;border:1px solid var(--line);border-radius:50%;
-  width:18px;height:18px;line-height:1;padding:0;margin-left:8px;
-  color:var(--soft);font-size:.72rem;font-weight:600;vertical-align:middle}
-.murky:hover{border-color:var(--amber);color:var(--amber)}
-
 /* ---------- progress ---------- */
 
 .gauge{margin:10px 0 4px}
