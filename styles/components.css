@@ -1,16 +1,26 @@
 /* components.css - buttons, cards, the progress ring, quiz options, word rows.
    Every rule here is about a reusable piece, never about one screen. */
 
-/* ---------- buttons ---------- */
-button{font:inherit;cursor:pointer;border-radius:4px}
+/* ---------- buttons: three levels, and only three ----------
+   1. .go          one per screen, filled: the thing you came to do
+   2. .go.ghost    the other real choices, quieter and without the green
+                   outline that used to compete with the filled one
+   3. .backlink    navigation, which is not a choice at all - it lives in
+                   the page header, never in the stack of actions
+   A disabled button is not a loud button at .4 opacity: it steps out of
+   the hierarchy entirely, or it draws the eye to what cannot be pressed. */
+button{font:inherit;cursor:pointer;border-radius:5px}
 
-.go{display:block;width:100%;background:var(--green);color:#fff;border:none;
-  padding:14px;font-weight:580;letter-spacing:-.005em;margin-bottom:10px}
-.go:hover{background:var(--green-d)}
-.go.ghost{background:#fff;color:var(--green-d);border:1px solid var(--green)}
-.go[disabled]{opacity:.4;cursor:default}
-.go[disabled]:hover{background:var(--green)}
-.go.ghost[disabled]:hover{background:#fff}
+.go{display:block;width:100%;background:var(--green);color:#fff;border:1px solid var(--green);
+  padding:15px;font-weight:580;font-size:1rem;letter-spacing:-.005em;margin-bottom:9px}
+.go:hover{background:var(--green-d);border-color:var(--green-d)}
+
+.go.ghost{background:var(--card);color:var(--green-d);border-color:var(--line);font-weight:520}
+.go.ghost:hover{background:var(--wash-green);border-color:var(--green)}
+
+.go[disabled],.go.ghost[disabled]{background:none;border-color:var(--line);
+  color:var(--soft);font-weight:450;cursor:default}
+.go[disabled]:hover,.go.ghost[disabled]:hover{background:none;border-color:var(--line)}
 
 .go.danger{background:var(--red);margin-top:4px}
 .go.danger:hover{background:#7A2A22}
@@ -21,12 +31,21 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 
 .say{background:#fff;border:1px solid var(--line);color:var(--green-d);
   padding:8px 14px;font-size:.88rem;font-weight:520;margin-bottom:14px}
-.say.tiny{margin:0 0 0 auto;padding:3px 9px;font-size:.8rem}
+.say.tiny{background:none;border:none;margin:0 0 0 auto;padding:2px 4px;
+  font-size:.95rem;opacity:.55}
+.say.tiny:hover{background:none;opacity:1}
 .say.alt{margin:10px 0 0}
 
 /* a label that is tapped rather than read - the five-tap developer unlock.
    No I-beam, and no word getting selected when the taps come in fast. */
 .tapzone{cursor:default;-webkit-user-select:none;user-select:none}
+
+/* the page header: a quiet way back, then the title, on one line */
+.pagehead{display:flex;align-items:center;gap:6px;margin:0 0 16px}
+.pagehead h1{margin:0;min-width:0}
+.backlink{flex:none;background:none;border:none;color:var(--soft);
+  font-size:1.3rem;line-height:1;padding:8px 10px;margin-left:-10px}
+.backlink:hover{color:var(--ink)}
 
 /* ---------- card ---------- */
 .card{background:var(--card);border:1px solid var(--line);border-radius:5px;
@@ -101,13 +120,16 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 
 /* ---------- progress ---------- */
 
-.gauge{margin:10px 0 4px}
+/* Half a phone screen to say "0%" is not a summary, it is a poster. The
+   arc is capped and the legend sits against it, so the actions start above
+   the fold instead of below it. */
+.gauge{max-width:224px;margin:2px auto -2px}
 .seg{fill:none;stroke-width:15;stroke-linecap:butt}
 .gnum{font-family:var(--sans);font-size:46px;font-weight:640;letter-spacing:-.03em;fill:var(--ink)}
 .gpct{font-size:20px;font-weight:500;fill:var(--soft)}
 
 .key{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 16px;
-  margin:-2px 0 18px;font-size:.82rem;color:var(--soft)}
+  margin:0 0 20px;font-size:.82rem;color:var(--soft)}
 .key span{display:flex;align-items:center;gap:6px}
 .key b{font-weight:560;color:var(--ink);font-variant-numeric:tabular-nums}
 
@@ -117,14 +139,20 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .dot.read{background:var(--amber)}
 .dot.known{background:var(--green)}
 
-/* ---------- lesson / word rows ---------- */
-.pick{text-align:left;padding:13px 16px}
-.pick small{display:block;font-weight:400;color:var(--soft);font-size:.8rem;margin-top:2px}
-.item{padding:14px 16px}
-.ihead{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
-.ihead b{font-size:1.15rem;font-weight:620;letter-spacing:-.02em}
-.ipos{color:var(--soft);font-size:.85rem}
-.idef{font-size:.97rem;margin-bottom:8px}
+/* ---------- word rows ---------- */
+/* A hundred words is a list, not a hundred cards. Hairlines instead of
+   borders, and the example loses its box: nesting a filled, bordered block
+   inside a bordered card is what made a single word 200px tall. */
+.list{border-top:1px solid var(--line)}
+.item{padding:13px 2px;border-bottom:1px solid var(--line)}
+.ihead{display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap}
+.ihead b{font-size:1.1rem;font-weight:620;letter-spacing:-.02em}
+.ipos{color:var(--soft);font-size:.84rem}
+.idef{font-size:.96rem;margin-bottom:3px}
+.item .ex{background:none;border-left:none;padding:0;margin:0;
+  font-size:.92rem;color:var(--soft)}
+/* the antonym is a footnote to the example, not a second definition */
+.item .anto{display:block;font-size:.85rem;margin-top:1px}
 
 /* ---------- familiarity index ----------
    Three dots instead of a percentage: the story of one word, from never

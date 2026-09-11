@@ -50,6 +50,27 @@ js/
     review.js              the spaced-repetition screen
 ```
 
+### Rules the interface follows
+
+- **One filled button per screen, and it is the one you can press.** Primary
+  is assigned to the first *actionable* thing, not nailed to a fixed button —
+  which is how a disabled "New words in 24h 0m" once ended up the loudest
+  element on the home screen while the only pressable action sat in an
+  outline. Everything else is an outline without the green border, so green
+  means "this one".
+- **Back is not an action.** It is a chevron in the page header, never a
+  full-width button in the stack at the bottom. The reading screen used to
+  end in four stacked buttons, three of them visually identical, with *Back*
+  among them.
+- **A disabled control leaves the hierarchy**, rather than shouting at 40%
+  opacity.
+- **A list is rows, not cards.** A hundred words separated by hairlines, with
+  the example unboxed: nesting a filled, bordered block inside a bordered card
+  made one word 200 px tall. It is 129 px now — 5.9 words per phone screen
+  instead of 3.9.
+- **Terminal screens point forward.** After a lesson the filled button is
+  *Done*, not *Read the story again*.
+
 ### Rules the layout follows
 
 - **Separation of concerns.** UI (`components/`), data (`data/`) and business

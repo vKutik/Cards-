@@ -36,18 +36,28 @@ function go(name, params = {}){
 /** Same screen, fresh content - a card stepping to its next example. */
 const rerender = () => paint(screen(), () => routes[current.name](current.params));
 
+/* Every screen but home starts the same way: a quiet way back, then the
+   title. Back is navigation, not one of the things you came here to do, so
+   it belongs in the header and not in the stack of actions at the bottom. */
+const pageHead = (title, to = 'home') =>
+  `<div class="pagehead">
+     <button class="backlink" data-back="${to}" aria-label="Back">\u2190</button>
+     <h1>${title}</h1>
+   </div>`;
+
+/* Only where leaving *is* the action: the end of a session. */
 const backButton = (label = 'Back', to = 'home') =>
-  `<button class="go ghost" data-back="${to}">${label}</button>`;
+  `<button class="go" data-back="${to}">${label}</button>`;
 const wireBack = () => screen().querySelectorAll('[data-back]')
   .forEach(b => b.onclick = () => go(b.dataset.back));
 
 /** Both quizzes finish the same way: the score, a line about it, then a way
  *  back into the text. Only the wording and those buttons differ, so the
  *  caller passes them and wires their clicks afterwards. */
-function scoreScreen(score, total, note, buttons, backLabel = 'Back'){
-  screen().innerHTML = `<h1>${score} of ${total}</h1>
+function scoreScreen(score, total, note, buttons){
+  screen().innerHTML = pageHead(`${score} of ${total}`) + `
     <div class="card muted"><p>${note}</p></div>
-    ${buttons}${backButton(backLabel,'home')}`;
+    ${buttons}`;
   easeIn(screen());
   wireBack();
 }
@@ -67,14 +77,23 @@ routes.home = () => {
     total:   words.length
   };
 
-  screen().innerHTML = progressRing(counts) + `
-    ${dueIds.length ? `<button class="go" id="review">Review ${dueIds.length} word${dueIds.length===1?'':'s'}</button>` : ''}
-    <button class="go ${dueIds.length ? 'ghost' : ''}" id="lesson" ${lesson ? '' : 'disabled'}>
-      ${lesson ? 'Learn' : (wait ? `New words in ${srs.hhmm(wait)}` : 'All words opened')}
-    </button>
-    <button class="go ghost" id="reading" ${reading.length ? '' : 'disabled'}>Reading practice</button>
-    <button class="go ghost" id="list">Word list</button>
-    <button class="linkbtn" id="settings">Settings</button>`;
+  /* Exactly one filled button, and it is the first thing that can actually
+     be done. Nailing "primary" to a fixed button is how a *disabled*
+     "New words in 24h" ended up the loudest element on the screen while the
+     one thing you could press sat in an outline. */
+  const actions = [
+    dueIds.length && { id:'review', label:`Review ${dueIds.length} word${dueIds.length===1?'':'s'}` },
+    { id:'lesson',  label: lesson ? 'Learn'
+        : wait ? `New words in ${srs.hhmm(wait)}` : 'All words opened', off: !lesson },
+    { id:'reading', label:'Reading practice', off: !reading.length },
+    { id:'list',    label:'Word list' }
+  ].filter(Boolean);
+  const lead = actions.find(a => !a.off);
+
+  screen().innerHTML = progressRing(counts) +
+    actions.map(a => `<button class="go${a === lead ? '' : ' ghost'}" id="${a.id}"${
+      a.off ? ' disabled' : ''}>${a.label}</button>`).join('') +
+    `<button class="linkbtn" id="settings">Settings</button>`;
 
   const on = (id, fn) => { const el = screen().querySelector('#'+id); if(el) el.onclick = fn; };
   on('review',   () => go('review',  { queue: shuffle(dueIds), i:0, revealed:false }));
@@ -132,12 +151,11 @@ function lessonCards(lesson, ws, i){
 }
 
 function lessonReading(lesson){
-  screen().innerHTML = `<h1>${lesson.title}</h1>` + `
+  screen().innerHTML = pageHead(lesson.title) + `
     <p class="muted">All five of today's words are in this text. Tap any highlighted
       word if you need its meaning.</p>
     <div class="card" id="stage"></div>
-    <button class="go" id="toquiz">Answer the questions</button>
-    ${backButton('Back','home')}`;
+    <button class="go" id="toquiz">Answer the questions</button>`;
 
   initReader(screen().querySelector('#stage'), lesson, DICT);
   screen().querySelector('#toquiz').onclick = async () => {
@@ -164,7 +182,10 @@ function lessonQuiz(lesson, ws){
         score === total
           ? 'The text carried every answer. That is how words are learned outside a card.'
           : 'Read the story once more and look at the sentence around each word.',
-        `<button class="go" id="again">Read it again</button>`, 'Done');
+        // the lesson is finished: carrying on is the action, re-reading the
+        // fallback - so the filled button must not point backwards
+        `<button class="go" data-back="home">Done</button>
+         <button class="go ghost" id="again">Read the story again</button>`);
       screen().querySelector('#again').onclick = () => go('lesson',{ id:lesson.id, stage:1 });
     }
   });
@@ -175,7 +196,7 @@ routes.review = params => {
   const { queue, i, revealed } = params;
   if(i >= queue.length){
     const log = store.todayLog();
-    screen().innerHTML = `<h1>Session done</h1>
+    screen().innerHTML = pageHead('Session done') + `
       <div class="card">
         <div class="row"><span>Reviewed</span><b>${queue.length}</b></div>
         <div class="row"><span>Right today</span><b>${log.right}</b></div>
@@ -232,7 +253,7 @@ routes.reading = ({ id = null, word: only = null, after = null, ahead = false } 
   const total = shelfOf(passage.w).length;
   const done  = textsRead(passage.w);
 
-  screen().innerHTML = `<h1>Reading practice</h1>
+  screen().innerHTML = pageHead('Reading practice') + `
     <p class="muted"><b>${word.word}</b> · ${done >= total
         ? `all ${total} texts answered`
         : `${done} of ${total} answered`}${late > 1 ? ` · ${late} days overdue` : ''}
@@ -240,8 +261,7 @@ routes.reading = ({ id = null, word: only = null, after = null, ahead = false } 
     <div class="card" id="stage"></div>
     <button class="go" id="quiz">Answer the question</button>
     <button class="go ghost" id="more">Another text for <b>${word.word}</b></button>
-    <button class="go ghost" id="another">Another word</button>
-    ${backButton('Back','home')}`;
+    <button class="go ghost" id="another">Another word</button>`;
 
   initReader(screen().querySelector('#stage'), passage, DICT);
   screen().querySelector('#quiz').onclick = () => go('readingQuiz', { id: passage.id });
@@ -259,7 +279,7 @@ function readingRested(){
   const open = [...srs.introducedIds()];
   const spare = open.reduce((n, id) => n + shelfOf(id).length - textsRead(id), 0);
 
-  screen().innerHTML = `<h1>Reading practice</h1>
+  screen().innerHTML = pageHead('Reading practice') + `
     <div class="card">
       <p class="def">${days
         ? `The schedule brings the next word back ${days === 1 ? 'tomorrow' : `in ${days} days`}.`
@@ -269,8 +289,7 @@ function readingRested(){
         words you have already opened. Reading them costs you nothing: extra
         practice never moves a due date.</p>` : ''}
     </div>
-    ${spare ? `<button class="go" id="ahead">Keep reading</button>` : ''}
-    ${backButton('Back','home')}`;
+    ${spare ? `<button class="go" id="ahead">Keep reading</button>` : ''}`;
   const a = screen().querySelector('#ahead');
   if(a) a.onclick = () => go('reading', { ahead:true });
   wireBack();
@@ -354,8 +373,10 @@ routes.list = () => {
   const seen = words.filter(w => store.getWord(w.id))
     .sort((a,b) => RANK[srs.stepOf(a.id)] - RANK[srs.stepOf(b.id)] || a.id - b.id);
 
-  const body = seen.length ? seen.map(w => `
-    <div class="card item">
+  /* Rows separated by a hairline, not a hundred bordered cards: a list is
+     for scanning down, and every border the eye has to cross costs a word. */
+  const body = seen.length ? `<div class="list">` + seen.map(w => `
+    <div class="item">
       <div class="ihead">
         <b>${w.word}</b>
         ${familiarityDots(srs.familiarity(w.id, textsRead(w.id)))}
@@ -363,12 +384,12 @@ routes.list = () => {
         <button class="say tiny" data-say="${w.id}">🔊</button>
       </div>
       <div class="idef">${w.definition}</div>
-      <div class="ex">${markedOf(w.examples[0])}</div>
-      ${w.opposite !== '—' ? `<div class="anto">opposite: ${w.opposite}</div>` : ''}
-    </div>`).join('')
+      <div class="ex">${markedOf(w.examples[0])}${w.opposite !== '—'
+        ? `<span class="anto">opposite: ${w.opposite}</span>` : ''}</div>
+    </div>`).join('') + `</div>`
     : '<div class="card muted">Nothing here yet. Open your first lesson to start.</div>';
 
-  screen().innerHTML = `<h1>Word list</h1>${body}${backButton('Back','home')}`;
+  screen().innerHTML = pageHead('Word list') + body;
   screen().querySelectorAll('[data-say]').forEach(b =>
     b.onclick = () => { const w = wordById(+b.dataset.say); say(w.id, w.word); });
   wireBack();
@@ -380,7 +401,7 @@ routes.list = () => {
  * title within its window - not something a learner stumbles into, but not
  * a secret either: the title says so. */
 routes.settings = ({ confirming = false, note = '' } = {}) => {
-  screen().innerHTML = `<h1>Settings</h1>
+  screen().innerHTML = pageHead('Settings') + `
     ${note ? `<div class="fb ok">${note}</div>` : ''}
     <div class="card">
       <h2 id="tap" class="tapzone">Vocabulary trainer</h2>
@@ -388,8 +409,7 @@ routes.settings = ({ confirming = false, note = '' } = {}) => {
     </div>
     ${newWordsCard()}
     ${creditsCard()}
-    ${settings.isDevMode() ? devCard(confirming) : ''}
-    ${backButton('Back','home')}`;
+    ${settings.isDevMode() ? devCard(confirming) : ''}`;
 
   screen().querySelector('#tap').onclick = () => {
     if(settings.registerUnlockTap()) go('settings', { note:'Developer mode unlocked.' });

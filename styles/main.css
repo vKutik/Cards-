@@ -55,7 +55,7 @@ a{color:var(--green-d)}
 ::view-transition-new(root){animation:vt-in .3s cubic-bezier(.22,.61,.36,1) both}
 
 /* Taps should answer straight away: colour eases, the surface gives a little */
-.go,.opt,.pill-opt,.sentence-opt,.linkbtn,.say,.grade button,.tipsay,.item{
+.go,.opt,.pill-opt,.sentence-opt,.linkbtn,.say,.grade button,.tipsay,.backlink{
   transition:background-color .18s ease,border-color .18s ease,color .18s ease,
     box-shadow .18s ease,opacity .2s ease,transform .12s ease}
 .go:not([disabled]):active,.opt:active,.pill-opt:active,.sentence-opt:active,
