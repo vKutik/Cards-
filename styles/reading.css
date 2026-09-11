@@ -6,6 +6,7 @@
 /* a target word inside a passage. It is a real <mark data-word="..."> so the
    reader module can find it without the view knowing anything about words. */
 .story mark{
+  transition:background-color .18s ease,color .18s ease;
   background:var(--wash-mark); color:inherit; font-weight:620;
   padding:1px 3px; border-radius:2px; cursor:pointer;
   border-bottom:1px solid rgba(29,101,96,.35);

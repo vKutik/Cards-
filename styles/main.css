@@ -37,3 +37,32 @@ a{color:var(--green-d)}
 
 /* the one thing every screen shares: it is swapped wholesale on navigation */
 #screen{min-height:60vh}
+
+/* ---------- motion ----------
+   A screen should arrive, not appear. Browsers with view transitions
+   cross-fade the outgoing screen into the incoming one; the rest ease the
+   new one up into place. js/components/motion.js picks between them. */
+
+@keyframes ease-in-up{
+  from{opacity:0;transform:translateY(9px)}
+  to  {opacity:1;transform:none}
+}
+.enter{animation:ease-in-up .28s cubic-bezier(.22,.61,.36,1) both}
+
+@keyframes vt-out{to{opacity:0}}
+@keyframes vt-in{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+::view-transition-old(root){animation:vt-out .16s ease both}
+::view-transition-new(root){animation:vt-in .3s cubic-bezier(.22,.61,.36,1) both}
+
+/* Taps should answer straight away: colour eases, the surface gives a little */
+.go,.opt,.pill-opt,.sentence-opt,.linkbtn,.say,.grade button,.tipsay,.item{
+  transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,opacity .2s ease,transform .12s ease}
+.go:not([disabled]):active,.opt:active,.pill-opt:active,.sentence-opt:active,
+.grade button:active,.say:active{transform:scale(.985)}
+
+@media (prefers-reduced-motion: reduce){
+  *,::view-transition-old(root),::view-transition-new(root){
+    animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important}
+}

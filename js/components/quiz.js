@@ -12,6 +12,7 @@
  * same feedback: a miss never flashes red, it lifts the right answer in
  * amber and says what the word actually means.
  */
+import { easeIn } from './motion.js';
 
 /* ---------- reading the {target} marker inside an example ---------- */
 const MARKER = /\{(.+?)\}/;
@@ -200,7 +201,7 @@ const OPT = { gap:'pill-opt', match:'sentence-opt', focus:'pill-opt yn', choice:
  * @param {{onAnswer?:(q,ok)=>void, onDone:(score,total)=>void}} handlers
  */
 export function runQuiz(container, questions, handlers){
-  let i = 0, score = 0;
+  let i = 0, score = 0, firstDraw = true;
 
   function draw(){
     if(i >= questions.length) return handlers.onDone(score, questions.length);
@@ -222,6 +223,9 @@ export function runQuiz(container, questions, handlers){
         </div>
         <div class="explain" hidden></div>
       </div>`;
+
+    // the screen itself already animated the first question in
+    if(firstDraw) firstDraw = false; else easeIn(container);
 
     const buttons = [...container.querySelectorAll('[data-k]')];
 

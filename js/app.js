@@ -14,6 +14,7 @@ import { renderReview } from './components/review.js';
 import { initReader, dictOf } from './components/reader.js';
 import { runQuiz, questionFor, anyQuestion } from './components/quiz.js';
 import { hideTooltip } from './components/tooltip.js';
+import { paint, easeIn } from './components/motion.js';
 
 const screen = () => document.getElementById('screen');
 const DICT = dictOf(words);
@@ -25,10 +26,10 @@ let current = { name:'home', params:{} };
 export function go(name, params = {}){
   hideTooltip();
   current = { name, params };
-  window.scrollTo(0,0);
-  routes[name](params);
+  paint(screen(), () => routes[name](params), () => window.scrollTo(0,0));
 }
-const rerender = () => routes[current.name](current.params);
+/** Same screen, fresh content - a card stepping to its next example. */
+const rerender = () => paint(screen(), () => routes[current.name](current.params));
 
 const backButton = (label = 'Back', to = 'home') =>
   `<button class="go ghost" data-back="${to}">${label}</button>`;
@@ -150,6 +151,7 @@ function lessonQuiz(lesson, ws){
           : 'Read the story once more and look at the sentence around each word.'}</p></div>
         <button class="go" id="again">Read it again</button>
         ${backButton('Done','home')}`;
+      easeIn(screen());
       screen().querySelector('#again').onclick = () => go('lesson',{ id:lesson.id, stage:1 });
       wireBack();
     }
@@ -284,6 +286,7 @@ routes.readingQuiz = ({ id }) => {
         <button class="go" id="another">Next word</button>
         <button class="go ghost" id="again">Read it again</button>
         ${backButton('Back','home')}`;
+      easeIn(screen());
       screen().querySelector('#another').onclick = () => go('reading');
       screen().querySelector('#again').onclick = () => go('reading',{ id: passage.id });
       wireBack();

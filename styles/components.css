@@ -78,6 +78,7 @@ button{font:inherit;cursor:pointer;border-radius:4px}
 .is-right {border-color:var(--green)!important;background:var(--wash-green)!important}
 .is-reveal{border-color:var(--amber)!important;background:var(--wash-amber)!important}
 .is-dim   {opacity:.4}
+.explain:not([hidden]){animation:ease-in-up .24s ease both}
 .explain{margin-top:14px;padding-left:11px;border-left:3px solid var(--amber);
   font-size:.93rem;color:var(--soft)}
 .explain b{color:var(--ink);font-weight:620}
