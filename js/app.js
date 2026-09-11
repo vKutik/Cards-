@@ -18,6 +18,7 @@ import { runQuiz, questionFor, anyQuestion } from './components/quiz.js';
 import { hideTooltip } from './components/tooltip.js';
 import { paint, easeIn } from './components/motion.js';
 import { shuffle, one } from './util.js';
+import { watchForNewBuild } from './fresh.js';
 
 const screen = () => document.getElementById('screen');
 const DICT = dictOf(words);
@@ -507,3 +508,4 @@ function migrateLessonStages(){
 await store.load();
 migrateLessonStages();
 go('home');
+watchForNewBuild();

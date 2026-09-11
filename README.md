@@ -14,7 +14,31 @@ module CORS rules.
 python3 -m http.server 8000     # then open http://localhost:8000
 ```
 
-GitHub Pages serves it as-is.
+GitHub Pages serves it as-is — with one catch worth knowing about, below.
+
+### Staying up to date
+
+Two things stand between a push and what the learner actually sees.
+
+**Jekyll.** GitHub Pages runs the repository through Jekyll, which silently
+drops every file whose name starts with an underscore. `styles/_font.css` is
+35 KB of embedded Inter, and it had been 404 on the live site since the day it
+was added — the app quietly fell back to system fonts, on the phone only, with
+nothing in the repository to suggest anything was wrong. The empty
+**`.nojekyll`** file at the root turns that processing off. Do not delete it.
+
+**Stale tabs.** A tab restored from the background can be hours old: iOS brings
+it back without asking the server anything, so a fix that shipped meanwhile
+simply is not there and the only symptom is that nothing appears to have
+changed. `js/fresh.js` fetches `version.txt` past the cache and compares it
+with the `BUILD` baked into the running modules; a page holding stale code
+carries a stale BUILD, so it reloads itself — once per session, so a stubborn
+cache can never put it in a loop. It checks at boot and whenever the tab comes
+back to the front.
+
+Both halves of the stamp must agree, so **run `python3 tools_stamp.py` before
+committing any change to the app**; it writes the same id into `js/build.js`
+and `version.txt`.
 
 ## Structure
 
