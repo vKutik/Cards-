@@ -202,59 +202,81 @@ routes.review = params => {
 
 /* ---------------- reading on a growing interval ---------------- */
 /**
- * A word comes back in a *different* text every time, and the gap between
- * visits widens with every success. What you see is one text drawn at random
- * from the ten that word owns - never one you have already read while any
- * unread one is left.
+ * Two different things decide what you read, and they must not be confused.
+ *
+ * The *schedule* decides what comes back on its own: one text per word per
+ * interval, widening with every success. That is the spacing doing its job.
+ *
+ * Wanting to read more is not the schedule's business. A word owns ten
+ * texts and you can work through all ten whenever you like - "Another text"
+ * stays on this word and never touches its due date, so extra practice can
+ * never cost you the spacing. Reading more is always allowed; it is simply
+ * never *asked* of you.
+ *
+ * @param {number|null} id     show exactly this passage
+ * @param {number|null} word   show a text for this word, whatever the schedule says
+ * @param {number|null} after  move past this word ("Another word")
+ * @param {boolean} ahead      read even though nothing is due
  */
-routes.reading = ({ id = null, ahead = false } = {}) => {
+routes.reading = ({ id = null, word: only = null, after = null, ahead = false } = {}) => {
   const due = srs.readingDue();
+  const free = only !== null || ahead || id !== null;
 
-  if(!due.length && !ahead && id === null) return readingRested();
+  if(!due.length && !free) return readingRested();
 
-  const passage = id !== null ? passages[id]
-                : pickText(due.length ? due[0] : anyIntroduced());
+  const passage = id !== null ? passages[id] : pickText(only ?? nextWord(due, after));
   if(!passage) return go('home');
 
-  const word = wordById(passage.w);
-  const late = srs.overdueBy(passage.w);
+  const word  = wordById(passage.w);
+  const late  = srs.overdueBy(passage.w);
+  const total = shelf(passage.w).length;
+  const done  = textsRead(passage.w);
 
   screen().innerHTML = `<h1>Reading practice</h1>
-    <p class="muted"><b>${word.word}</b> · text ${textsRead(passage.w) + 1} of
-      ${shelf(passage.w).length}${late > 1 ? ` · ${late} days overdue` : ''}
+    <p class="muted"><b>${word.word}</b> · ${done >= total
+        ? `all ${total} texts answered`
+        : `${done} of ${total} answered`}${late > 1 ? ` · ${late} days overdue` : ''}
       ${due.length > 1 ? ` · ${due.length - 1} more waiting` : ''}
       <button class="murky" id="murky" title="This text does not make the word clear"
         aria-label="This text does not make the word clear">?</button></p>
     <div class="card" id="stage"></div>
     <button class="go" id="quiz">Answer the question</button>
+    <button class="go ghost" id="more">Another text for <b>${word.word}</b></button>
     <button class="go ghost" id="another">Another word</button>
     ${backButton('Back','home')}`;
 
   initReader(screen().querySelector('#stage'), passage, DICT);
   screen().querySelector('#quiz').onclick = () => go('readingQuiz', { id: passage.id });
-  screen().querySelector('#another').onclick = () => go('reading', { ahead });
+  // more of the same word: the schedule is not consulted and not moved
+  screen().querySelector('#more').onclick = () => go('reading', { word: passage.w, ahead });
+  screen().querySelector('#another').onclick = () => go('reading', { after: passage.w, ahead });
   screen().querySelector('#murky').onclick = async () => {
     // a rule cannot tell a figurative use from a plain one; this can
     await store.markMurky(passage.id);
-    go('reading', { ahead });
+    go('reading', { word: passage.w, ahead });
   };
   wireBack();
 };
 
-/** Nothing is due: say when the next word comes round, and offer to go early. */
+/* Nothing is *due* - which is not the same as nothing to read. The schedule
+   has finished asking; the shelves are still full. Say both, and make the
+   reading button the plain one rather than something you have to insist on. */
 function readingRested(){
   const days = srs.nextReadingIn();
-  const open = srs.introducedIds().size;
+  const open = [...srs.introducedIds()];
+  const spare = open.reduce((n, id) => n + shelf(id).length - textsRead(id), 0);
+
   screen().innerHTML = `<h1>Reading practice</h1>
     <div class="card">
-      <p class="def">Nothing is due right now.</p>
-      <p class="muted">${days
-        ? `The next word comes round ${days === 1 ? 'tomorrow' : `in ${days} days`}.
-           Coming back exactly when a word starts to fade is the whole point of
-           the spacing - but you can read ahead if you want to.`
+      <p class="def">${days
+        ? `The schedule brings the next word back ${days === 1 ? 'tomorrow' : `in ${days} days`}.`
         : 'Open some words first and their texts will start arriving here.'}</p>
+      ${open.length ? `<p class="muted">Nothing is <em>due</em> - but
+        ${spare} more text${spare === 1 ? '' : 's'} are sitting on the shelves of the
+        words you have already opened. Reading them costs you nothing: extra
+        practice never moves a due date.</p>` : ''}
     </div>
-    ${open ? `<button class="go ghost" id="ahead">Read ahead anyway</button>` : ''}
+    ${spare ? `<button class="go" id="ahead">Keep reading</button>` : ''}
     ${backButton('Back','home')}`;
   const a = screen().querySelector('#ahead');
   if(a) a.onclick = () => go('reading', { ahead:true });
@@ -268,23 +290,42 @@ const shelf = wordId => shelfOf(wordId).filter(p => !store.isMurky(p.id));
 
 const textsRead = wordId => shelf(wordId).filter(p => store.isPassageRead(p.id)).length;
 
-/** One of the word's ten, drawn at random from those not yet read. */
-let lastPassage = null;
+/* Texts already served in this sitting. A text only counts as *read* once
+   its question is answered, so "have you read it" cannot order a browse
+   through the shelf - this can. Deliberately not persisted: it orders one
+   sitting and is forgotten, which is what keeps the shelf from repeating
+   itself while you work through it. */
+const shown = new Set();
+
+/** One of the word's ten: an unread one it has not just served, at random. */
 function pickText(wordId){
   if(wordId == null) return null;
   const left = shelf(wordId);
-  if(!left.length) return shelfOf(wordId)[0] || null;  // every one retired
-  let pool = left.filter(p => !store.isPassageRead(p.id));
-  if(!pool.length) pool = left;                        // all read: revisit
-  if(pool.length > 1) pool = pool.filter(p => p.id !== lastPassage);
-  const chosen = one(pool);
-  lastPassage = chosen ? chosen.id : null;
-  return chosen || null;
+  if(!left.length) return shelfOf(wordId)[0] || null;   // every one retired
+
+  // worked all the way through: start the shelf again rather than stall
+  if(left.every(p => shown.has(p.id))) left.forEach(p => shown.delete(p.id));
+
+  const unseen = left.filter(p => !shown.has(p.id));
+  const chosen = one(unseen.filter(p => !store.isPassageRead(p.id)).length
+    ? unseen.filter(p => !store.isPassageRead(p.id))
+    : unseen);
+  shown.add(chosen.id);
+  return chosen;
+}
+
+/** Which word to read next: the most overdue one, or - when the learner
+ *  asked to move on - the one after it in the queue, so "Another word"
+ *  walks the whole queue instead of bouncing between its top two. */
+function nextWord(due, after){
+  if(!due.length) return anyIntroduced(after);
+  if(after === null) return due[0];
+  return due[(due.indexOf(after) + 1) % due.length];
 }
 
 /** Reading ahead of schedule: whichever word is closest to its turn. */
-function anyIntroduced(){
-  const ids = [...srs.introducedIds()];
+function anyIntroduced(skip = null){
+  const ids = [...srs.introducedIds()].filter(id => id !== skip);
   if(!ids.length) return null;
   return ids.sort((a,b) => srs.overdueBy(b) - srs.overdueBy(a))[0];
 }
@@ -307,9 +348,11 @@ routes.readingQuiz = ({ id }) => {
         score === total
           ? 'You read the meaning out of the sentences around it. That is how words are actually learned.'
           : 'Read it once more and look at what happens either side of the word.',
-        `<button class="go" id="another">Next word</button>
-         <button class="go ghost" id="again">Read it again</button>`);
-      screen().querySelector('#another').onclick = () => go('reading');
+        `<button class="go" id="more">Another text for <b>${wordById(passage.w).word}</b></button>
+         <button class="go ghost" id="another">Next word</button>
+         <button class="go ghost" id="again">Read this one again</button>`);
+      screen().querySelector('#more').onclick = () => go('reading',{ word: passage.w });
+      screen().querySelector('#another').onclick = () => go('reading',{ after: passage.w, ahead:true });
       screen().querySelector('#again').onclick = () => go('reading',{ id: passage.id });
     }
   });

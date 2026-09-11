@@ -125,9 +125,29 @@ touched: flagging a text is not failing it. This is the escape hatch for the
 roughly one text in ten that the sense filters let through (see below); the
 filters are rules, and rules cannot read.
 
-When nothing is due the screen says so and names the day the next word comes
-round, with a *Read ahead anyway* button for when you want more than the
-spacing asks of you.
+### Reading more is always allowed
+
+The schedule decides what comes back **by itself** — one text per word per
+interval. It never decides what you are *allowed* to read. Those are two
+different things, and conflating them was a real bug: for a while the app
+served one text per word and then closed for the day, so nine of every ten
+passages were unreachable and the only way to see a second text of a word was
+to flag the first one away.
+
+So the reading screen carries two ways forward:
+
+- **Another text for `<word>`** — the next passage on this word's shelf. The
+  due date is not consulted and not moved: extra practice can never cost you
+  the spacing.
+- **Another word** — the next word in the due queue, walking the whole queue
+  rather than bouncing between its top two.
+
+A sitting works through a shelf rather than drawing from it at random: a text
+already served is not served again until the shelf runs out and starts over.
+
+When nothing is due the screen says so, names the day the next word comes
+round, counts the texts still sitting on the shelves you have opened, and
+offers **Keep reading**.
 
 Each text is followed by one check on its word, and the mechanic follows the
 text's place on the shelf, so the questions vary as the texts do.
