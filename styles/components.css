@@ -133,6 +133,10 @@ button{font:inherit;cursor:pointer;border-radius:5px}
 .key span{display:flex;align-items:center;gap:6px}
 .key b{font-weight:560;color:var(--ink);font-variant-numeric:tabular-nums}
 
+/* the fast number, under the slow one */
+.today{text-align:center;font-size:.82rem;color:var(--soft);margin:-12px 0 18px}
+.today b{color:var(--green-d);font-weight:600;font-variant-numeric:tabular-nums}
+
 /* the four steps a word moves through, one colour each */
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none}
 .dot.started{background:var(--red)}

@@ -74,7 +74,8 @@ routes.home = () => {
     known:   srs.countStep('known'),
     read:    srs.countStep('read'),
     started: srs.countStep('started'),
-    total:   words.length
+    total:   words.length,
+    today:   store.todayLog()
   };
 
   /* Exactly one filled button, and it is the first thing that can actually
@@ -175,7 +176,10 @@ function lessonQuiz(lesson, ws){
   screen().innerHTML = `<h1>${lesson.title}</h1><div id="stage"></div>`;
 
   runQuiz(screen().querySelector('#stage'), questions, {
-    onAnswer: (q, ok) => { if(ok && q.wordId != null) store.markReadCorrect(q.wordId); },
+    onAnswer: (q, ok) => {
+      store.logAnswer(ok);                       // counts towards today's tally
+      if(ok && q.wordId != null) store.markReadCorrect(q.wordId);
+    },
     onDone: async (score, total) => {
       await store.setLessonStage(lesson.id,'done');
       scoreScreen(score, total,
@@ -347,7 +351,10 @@ routes.readingQuiz = ({ id }) => {
 
   runQuiz(screen().querySelector('#stage'), questions, {
     // getting it right from the passage alone is what turns a word amber
-    onAnswer: (q, ok) => { if(ok) store.markReadCorrect(q.wordId); },
+    onAnswer: (q, ok) => {
+      store.logAnswer(ok);                       // counts towards today's tally
+      if(ok) store.markReadCorrect(q.wordId);
+    },
     onDone: async (score, total) => {
       await store.markPassageRead(passage.id);
       // right: the next text for this word moves further out. wrong: tomorrow.

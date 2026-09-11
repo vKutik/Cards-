@@ -212,6 +212,27 @@ the pipeline does the quality work:
   most three people, and no more than two may come from the same book for the
   same word.
 
+### What the percentage on the home screen means
+
+It is **how far through the whole journey you are**, not how many words are
+finished. Each word is worth a third for being opened, two thirds once you
+have proved it inside a real passage, and the whole of it at box 4.
+
+It used to be `learned / 100`, where "learned" means box 4 — which, answering
+*Good* every time, is the **27th day** after a word is opened. So the headline
+read 0% for the first month however much work went in, while the arc beneath
+it was already coloured for every word touched: the picture and the number
+were measuring different things on the same screen. The arc now draws the same
+weighted sum, so they cannot disagree again, and real work never rounds away
+to nothing.
+
+Under it sits the fast number: **answers today**. A whole lesson moves the
+percentage two points, because a hundred words really is a hundred words —
+the daily tally is what answers "did I get anywhere just now". Every answer
+counts towards it, from a lesson quiz, a reading question or a review; before
+this, only review grades were logged, so a day of lessons and reading left no
+trace. Nothing is shown on a day with no work.
+
 ### The four steps a word moves through
 
 | Colour | Step | Reached when |
