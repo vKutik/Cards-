@@ -11,7 +11,14 @@
   padding:1px 3px; border-radius:2px; cursor:pointer;
   border-bottom:1px solid rgba(29,101,96,.35);
 }
-.story mark:hover{background:#D6E5DF}
+/* ...and the same mark, four steps quieter as the word becomes known.
+   See the note in js/components/reader.js. Order matters: .open and :hover
+   come last so an open tooltip always reads clearly whatever the level. */
+.story mark.lvl1{background:rgba(29,101,96,.07);border-bottom-color:rgba(29,101,96,.30)}
+.story mark.lvl2{background:none;border-bottom:1px dotted rgba(29,101,96,.42);font-weight:560}
+.story mark.lvl3{background:none;border-bottom:1px dotted rgba(29,101,96,.18);font-weight:inherit}
+
+.story mark:hover{background:#D6E5DF;border-bottom-color:rgba(29,101,96,.35)}
 .story mark.open{background:var(--green);color:#fff;border-bottom-color:transparent}
 
 .source{font-size:.8rem;color:var(--soft);margin-top:12px}

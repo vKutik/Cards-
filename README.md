@@ -119,11 +119,40 @@ js/
    five again with no setting left switched on to forget about.
 2. **Stage 1, flashcards** — word, transcription, recording, definition, one
    example. Five cards.
-3. **Stage 2, reading** — a short text weaving in all five words. Tap any
+3. **Stage 2, recall** — five gap fills, one per word, before the story.
+4. **Stage 3, reading** — a short text weaving in all five words. Tap any
    highlighted word for a tooltip with its transcription, a speaker button
    and its meaning; the text stays where it is.
-4. **Stage 3, quiz** — two comprehension questions written for the story,
+5. **Stage 4, quiz** — two comprehension questions written for the story,
    plus one of the three checking mechanics below on a word from today.
+
+### Why there is a recall stage
+
+The lesson used to go straight from reading five cards to reading a story,
+with nothing in between asking the learner to *produce* anything — and being
+able to recognise a word you read a minute ago is exactly the feeling that
+fools people into thinking they know it.
+
+An attempt to retrieve, even a failed one, does more for retention than any
+amount of re-reading. So five gap fills sit between the cards and the story:
+
+- **after all five cards, not after each one.** A test one second after
+  reading the answer is still reading the answer.
+- **gap fill for all five**, the mechanic that comes closest to producing the
+  word rather than picking it out of a line-up.
+- **never the sentence just shown on the card.** `gapQuestion` takes the
+  example the card displayed and avoids it where the word has another, so the
+  question tests memory rather than the last three seconds.
+
+### Highlighting that steps back
+
+A highlight is there to make a *new* word findable. A word you already know
+does not need finding, and a cue that helps a beginner gets in the way of
+someone past that stage — so `<mark>` fades across the four familiarity
+levels, from a filled highlight down to a faint dotted underline on a word
+that is mastered. By then the eye has to do the noticing, which is the work
+reading for meaning is supposed to involve. It stays tappable throughout, and
+an open tooltip is always solid whatever the level.
 
 ### The three checking mechanics
 

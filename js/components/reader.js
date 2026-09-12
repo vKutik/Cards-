@@ -11,8 +11,9 @@ import { showTooltip, hideTooltip } from './tooltip.js';
  * @param {HTMLElement} container element to render into
  * @param {{text:string, source?:string}} passage
  * @param {Map<string,object>} dict headword -> word object
+ * @param {(wordId:number)=>number} [famOf] 0-3, how well the word is known
  */
-export function initReader(container, passage, dict){
+export function initReader(container, passage, dict, famOf){
   container.innerHTML =
     `<div class="story">${passage.text}</div>` +
     (passage.source ? `<div class="source">${passage.source}</div>` : '');
@@ -20,6 +21,17 @@ export function initReader(container, passage, dict){
   container.querySelectorAll('mark').forEach(el => {
     el.setAttribute('role','button');
     el.setAttribute('tabindex','0');
+
+    /* Signalling that steps back as the word settles. A highlight is there to
+       make a new word findable; a word you already know does not need finding,
+       and the cue that helps a beginner gets in the way of someone past that
+       stage. By the last level the word sits in the text like any other and
+       the eye has to do the noticing - which is the work that reading for
+       meaning is supposed to involve. It stays tappable throughout. */
+    if(famOf){
+      const w = dict.get(el.dataset.word);
+      if(w) el.classList.add('lvl' + famOf(w.id));
+    }
 
     const open = e => {
       e.stopPropagation();

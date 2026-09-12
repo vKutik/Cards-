@@ -82,9 +82,13 @@ const sameClass = (word, allWords) =>
 
 /* ---------- 1. Context gap fill ---------- */
 /** A sentence with the word cut out of it; the pills are all in the same
- *  grammatical form so only the context tells you which one belongs. */
-function gapQuestion(word, allWords){
-  const example = one(word.examples);
+ *  grammatical form so only the context tells you which one belongs.
+ *  `avoid` is a sentence the learner has just read - asking it straight back
+ *  tests the last three seconds, not memory, so another one is used when the
+ *  word has another one to give. */
+export function gapQuestion(word, allWords, avoid){
+  const fresh = avoid ? word.examples.filter(e => e !== avoid) : word.examples;
+  const example = one(fresh.length ? fresh : word.examples);
   const answer  = surfaceOf(example);
   const shape   = shapeOf(answer, word.word);
 
