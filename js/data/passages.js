@@ -8,6 +8,13 @@
  *
  * `source` names the public-domain book a passage was taken from. An empty
  * source means the passage was written for this course.
+ *
+ * `sense` is set only when this passage uses the word in a sense its card
+ * definition does not teach - a different meaning, an adjacent one, or the
+ * wrong part of speech. The reader's tooltip shows it instead of the card's
+ * definition, and the reading check asks about it instead of drawing a
+ * fresh question from the card's own examples. No `sense` means the card's
+ * definition already fits.
  */
 export const passages = [
   {"id": 0, "w": 0, "slot": 0, "also": [], "text": "From that <mark data-word=\"shallow\">shallow</mark>, gravelly spit near the bank. And it was there he used to teach him fishing, and there young Portly caught his first fish, of which he was so very proud.", "source": "The Wind in the Willows — Kenneth Grahame"},
